@@ -2,8 +2,8 @@
 
 You are writing a complete, deterministic ARC-AGI-3 game with `arcengine`.
 Prefer small symbolic grids, named sprites, short mechanics, and explicit state.
-Keep rendering/protocol data numeric; symbols are the compact authoring and
-inspection format.
+Use symbols for every color and sprite cell. Treat the engine's storage,
+rendering, and protocol conversion as opaque implementation details.
 
 ## Palette and grids
 
@@ -20,8 +20,8 @@ ARC_COLOR_LEGEND = (
 
 Special cells:
 
-- `.` = `-1`: transparent and passable.
-- `X` = `-2`: invisible but solid in pixel-perfect collision.
+- `.`: empty, invisible, and passable.
+- `X`: invisible but solid in pixel-perfect collision.
 
 Case matters: `B/b`, `P/p`, `R/r`, `W/w`, and `G/g` are different colors.
 Write rectangular grids as quoted row strings:
@@ -53,19 +53,15 @@ player = Sprite(
 )
 ```
 
-Numeric 2D grids remain accepted, but use symbols in new game source.
-`Sprite.pixels`, `Sprite.render()`, and raw camera frames are numeric `np.int8`
-arrays. Regular `FrameData` and protocol frames are nested integer lists. Do
-not assign a string directly into `Sprite.pixels`.
+Never use integer color codes in game source. Author and inspect grids only
+through the symbolic forms below.
 
-Inspection/conversion:
+Symbolic inspection:
 
-- `parse_grid_ascii(text_or_rows)` → numeric `np.int8` grid.
-- `sprite.to_ascii()` → base pixels as text, preserving `.` and `X`;
+- `sprite.symbols` → immutable source rows such as `("W.R", "BBB")`.
+- `sprite.to_ascii()` → source grid as text, preserving `.` and `X`;
   `sprite.to_ascii(rendered=True)` includes transforms.
-- `format_sprite_ascii(grid)` → sprite text, preserving `.` and `X`.
-- `format_grid_ascii(frame)` → visible color text for rendered 0..15 grids;
-  values are clamped to 0..15, so it does not preserve negative sentinels.
+- `format_grid_ascii(frame)` → a rendered frame as symbolic text.
 - `sprite.color_remap("R", "b")` accepts color symbols; `.` erases and `X`
   creates invisible solid cells.
 - `Camera(background="B", letter_box="G")` accepts symbols.
@@ -81,7 +77,7 @@ Inspection/conversion:
   `-2` by 3, etc. Scale `0` is invalid.
 - `Level` groups sprites and may set `grid_size=(width, height)`.
 - The camera renders its viewport, integer-upscales it, centers it with
-  letterboxing, then applies UI overlays. Final output is always 64×64 numeric.
+  letterboxing, then applies UI overlays. Final output is always 64×64.
 - Game construction and resets clone levels/sprites. Rebind stored sprite
   references in `on_set_level(level)` by name or tag.
 
@@ -121,8 +117,8 @@ Useful system tags:
 - `sys_static`: eligible pixel-perfect sprites are merged per layer when a
   level is built.
 - `sys_click`: exposes an ACTION6 location for a sprite.
-- `sys_every_pixel`: with `sys_click`, exposes every visible color cell
-  (`0..15`); `.` and `X` do not generate click points.
+- `sys_every_pixel`: with `sys_click`, exposes every visible color cell; `.`
+  and `X` do not generate click points.
 - `sys_place`: marks a place/click target.
 
 ## Minimal working game
@@ -211,6 +207,6 @@ frame_data = game.perform_action(ActionInput(id=GameAction.RESET))
 - Enabled actions match implemented mechanics; ACTION6 coordinates are
   converted through the camera.
 - Win, loss, level transition, RESET, and replay behavior are deterministic.
-- Rendered frames stay numeric; text formatters are only for compact reasoning
-  or debugging.
+- Use `format_grid_ascii` when a frame must be included in reasoning or debug
+  output.
 - Tests cover movement, collision, reset, win/loss, and representative renders.

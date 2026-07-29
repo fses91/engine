@@ -26,5 +26,5 @@ camera = Camera(background="B", letter_box="G")
 ```
 
 `WwgGcBMPRbSYOrNp` encodes the 16 ARC colors. `.` is transparent and
-passable; `X` is invisible and solid. Numeric sprite grids remain compatible,
-and all runtime rendering and protocol output remain numeric.
+passable; `X` is invisible and solid. Game source uses symbols throughout;
+storage and protocol conversion are handled inside the engine.

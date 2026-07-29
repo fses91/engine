@@ -1,8 +1,8 @@
 # ARCEngine overview
 
 ARCEngine is a turn-based, sprite-oriented game engine for ARC-AGI-3. It keeps
-game source spatial and compact for human or agent authors while preserving the
-numeric grids expected by NumPy, rendering, and the ARC protocol.
+game source spatial and compact for human or agent authors. Colors and sprite
+geometry are expressed entirely with symbols.
 
 ## Design goals
 
@@ -16,14 +16,14 @@ The engine supplies the common structure:
 
 Games supply their own mechanics in `ARCBaseGame.step()`.
 
-## Symbolic authoring, numeric runtime
+## Symbolic model
 
 Authored sprite grids use one character per cell:
 
 ```text
-WwgGcBMPRbSYOrNp  16 visible ARC colors, indices 0..15
-.                 transparent and passable, value -1
-X                 invisible and solid, value -2
+WwgGcBMPRbSYOrNp  the 16 visible ARC colors
+.                 empty and passable
+X                 invisible and solid
 ```
 
 The symbol case is significant. A grid such as:
@@ -39,33 +39,18 @@ Sprite(
 )
 ```
 
-is decoded to an `np.int8` array at construction. The rest of the engine stays
-numeric:
+remains symbolic throughout the game-authoring API. The engine privately
+compiles it for transforms, rendering, collision, and protocol output.
 
-```text
-symbolic source
-    → parse_grid_ascii
-    → Sprite.pixels (np.int8)
-    → rotate / mirror / scale / compose
-    → Camera.render() (64×64 np.int8)
-    → FrameData / ARC protocol (numeric)
-```
-
-This boundary is intentional: strings reduce source and prompt size, while
-numeric arrays keep rendering, collision, and wire behavior unchanged. Legacy
-numeric sprite grids remain accepted.
-
-Use `Sprite.to_ascii()` or `format_sprite_ascii()` when inspecting base sprite
-data because both preserve `.` and `X`. Use `format_grid_ascii()` for rendered
-0..15 grids; it clamps values to the visible palette. `parse_grid_ascii()` is
-the inverse authoring helper.
+Use `Sprite.symbols` for immutable source rows, `Sprite.to_ascii()` for a text
+view, and `format_grid_ascii()` to convert a rendered frame into symbolic text.
 
 ## Sprites and collision
 
-A sprite owns base pixels plus a world position, layer, transform, blocking
+A sprite owns a symbolic grid plus a world position, layer, transform, blocking
 mode, interaction mode, name, and tags.
 
-Rendering applies rotation, mirroring, and scaling to the numeric base grid.
+Rendering applies rotation, mirroring, and scaling to the source grid.
 Lower layers render first, so higher layers appear on top. Both `.` and `X` are
 invisible.
 
@@ -118,24 +103,22 @@ tag.
 
 ## Render loop
 
-1. `Camera._raw_render()` creates a camera-sized numeric background and draws
-   visible sprites from low to high layer.
+1. The camera creates its background and draws visible sprites from low to high
+   layer.
 2. `Camera.render()` uniformly upscales the view with nearest-neighbor repeats,
    centers it in a 64×64 letter-boxed frame, and applies UI interfaces.
-3. `perform_action(raw=False)` serializes the numeric array as nested integer
-   lists. `raw=True` keeps NumPy arrays in `FrameDataRaw`.
+3. `perform_action()` packages the resulting frames for the ARC protocol.
 
-Camera background and letter-box colors accept symbols such as `"B"` or legacy
-indices. Camera dimensions determine integer scaling:
+Camera background and letter-box colors use symbols such as `"B"`. Camera
+dimensions determine integer scaling:
 
 - 32×32 scales 2× and fills the frame;
 - 30×30 scales 2× with a 2-pixel border;
 - 30×15 scales 2× with horizontal and vertical letterboxing;
 - 15×15 scales 4× with a 2-pixel border.
 
-UI implementations receive the final numeric 64×64 frame. They can use
-`RenderableUserDisplay.draw_sprite()` to compose symbolic-authored sprites
-without converting the frame to text.
+UI implementations receive the final 64×64 engine frame. They can use
+`RenderableUserDisplay.draw_sprite()` to compose sprites.
 
 ## Actions
 

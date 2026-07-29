@@ -329,11 +329,9 @@ sprite_custom = Sprite(
 
 #### Notes
 
-- Prefer symbolic row strings for authored sprite grids. `.` is transparent and
-  passable (`-1`); `X` is invisible and solid (`-2`). Both are omitted during
-  rendering, but only `.` is a hole for pixel-perfect collision.
-- Numeric grids remain compatible. At runtime, `pixels` is always a numeric
-  `np.int8` array.
+- Sprite grids use symbolic row strings. `.` is empty and passable; `X` is
+  invisible and solid. Neither is drawn, but only `.` is a hole for
+  pixel-perfect collision.
 
 - Rotation is limited to `0`, `90`, `180`, `270` degrees.
 - `scale`:
@@ -350,7 +348,7 @@ sprite_custom = Sprite(
 - `scale: int`
 - `rotation: int`
 - `blocking: BlockingMode`
-- `pixels: np.ndarray`
+- `symbols: tuple[str, ...]`
 - `interaction: InteractionMode`
 - `tags: list[str]`
 - `mirror_ud: bool`, `mirror_lr: bool`
@@ -363,8 +361,7 @@ sprite_custom = Sprite(
 ##### `__init__(pixels, name=None, x=0, y=0, layer=0, scale=1, rotation=0, mirror_ud=False, mirror_lr=False, blocking=BlockingMode.PIXEL_PERFECT, interaction=None, visible=True, collidable=True, tags=[])`
 Initialize a new Sprite.
 
-- `pixels`: Symbolic `list[str]`, a dedented multiline grid string, a legacy
-  numeric 2D list, or a numeric 2D NumPy array
+- `pixels`: Symbolic `list[str]` or a dedented multiline grid string
 - `name`: Optional sprite name (default: generates UUID)
 - `x`: X coordinate in pixels (default: 0)
 - `y`: Y coordinate in pixels (default: 0)
@@ -496,13 +493,12 @@ Set the sprite's name.
 ##### `render()`
 Render the sprite with current scale and rotation.
 
-- Returns: A numeric 2D NumPy array representing the rendered sprite
+- Returns: The engine render grid
 - Raises `ValueError` if downscaling factor doesn't evenly divide the sprite dimensions
 
 ##### `to_ascii(rendered=False)`
-Format the sprite as a symbolic grid. By default it formats the base `pixels`;
-pass `rendered=True` to include rotation, mirroring, and scale. Unlike
-`format_grid_ascii`, it preserves `.` and `X`.
+Format the sprite as a symbolic grid. By default it formats the source grid;
+pass `rendered=True` to include rotation, mirroring, and scale.
 
 - Returns: A newline-delimited string with one character per cell
 
@@ -524,10 +520,9 @@ The collision check follows these rules:
 ##### `color_remap(old_color, new_color)`
 Remap the sprite's color.
 
-- `old_color`: The old color symbol or legacy index, or `None` to remap every
-  visible color
-- `new_color`: The new color symbol or legacy index; `.` erases matching pixels
-  and `X` makes them invisible but solid
+- `old_color`: The old color symbol, or `None` to remap every visible color
+- `new_color`: The new color symbol; `.` erases matching pixels and `X` makes
+  them invisible but solid
 
 ```python
 sprite.color_remap("R", "b")
@@ -592,8 +587,7 @@ camera = Camera(
 
 - `x: int`, `y: int`
 - `width: int`, `height: int` (max 64)
-- `background`, `letter_box`: Numeric palette-index getters; their setters
-  accept an ARC color symbol or legacy integer index
+- `background`, `letter_box`: ARC color symbols
 
 #### Methods
 
@@ -606,8 +600,8 @@ Args:
 - `y` (int): Y coordinate in pixels (default: 0)
 - `width` (int): Viewport width in pixels (default: 64, max: 64)
 - `height` (int): Viewport height in pixels (default: 64, max: 64)
-- `background` (str | int): Background color (default: `"B"` - black)
-- `letter_box` (str | int): Letter-box color (default: `"B"` - black)
+- `background` (str): Background color symbol (default: `"B"` - black)
+- `letter_box` (str): Letter-box color symbol (default: `"B"` - black)
 - `interfaces` (list[RenderableUserDisplay]): Optional list of renderable interfaces to initialize with
 
 Raises:
