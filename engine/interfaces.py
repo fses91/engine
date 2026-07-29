@@ -1,5 +1,5 @@
 """
-Module for user display interfaces in the ARCEngine.
+Module for user display interfaces in the Engine.
 """
 
 from abc import ABC, abstractmethod

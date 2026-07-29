@@ -1,5 +1,5 @@
 """
-Module for level-related functionality in the ARCEngine.
+Module for level-related functionality in the Engine.
 """
 
 import copy

@@ -1,5 +1,5 @@
 """
-ARCEngine - A Python library for 2D sprite-based game development
+Engine - A Python library for 2D sprite-based game development
 """
 
 from .base_game import ARCBaseGame
@@ -17,7 +17,7 @@ from .palette import (
 )
 from .sprites import Sprite
 
-__version__ = "0.1.0"
+__version__ = "0.9.3"
 __all__ = [
     "Sprite",
     "BlockingMode",

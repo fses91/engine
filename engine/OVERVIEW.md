@@ -1,6 +1,6 @@
-# ARCEngine overview
+# Engine overview
 
-ARCEngine is a turn-based, sprite-oriented game engine for ARC-AGI-3. It keeps
+Engine is a turn-based, sprite-oriented game engine for ARC-AGI-3. It keeps
 game source spatial and compact for human or agent authors. Colors and sprite
 geometry are expressed entirely with symbols.
 

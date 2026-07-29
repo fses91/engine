@@ -1,6 +1,6 @@
 import numpy as np
 
-from arcengine import (
+from engine import (
     ARCBaseGame,
     BlockingMode,
     Camera,

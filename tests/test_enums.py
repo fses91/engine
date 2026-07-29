@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import ValidationError
 
-from arcengine import MAX_REASONING_BYTES, ActionInput, GameAction
+from engine import MAX_REASONING_BYTES, ActionInput, GameAction
 
 
 class TestActionInputReasoning(unittest.TestCase):

@@ -1,6 +1,6 @@
 """A simple maze game implementation."""
 
-from arcengine import ARCBaseGame, Camera, GameAction, InteractionMode, Level, Sprite, ToggleableUserDisplay
+from engine import ARCBaseGame, Camera, GameAction, InteractionMode, Level, Sprite, ToggleableUserDisplay
 
 # Create sprites dictionary with all sprite definitions
 sprites = {

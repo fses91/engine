@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from arcengine import (
+from engine import (
     ARC_COLOR_CHARS,
     ARC_COLOR_LEGEND,
     ARC_INVISIBLE_BLOCKING_CHAR,
@@ -14,7 +14,7 @@ from arcengine import (
     Sprite,
     format_grid_ascii,
 )
-from arcengine.palette import (
+from engine.palette import (
     color_to_index,
     format_sprite_ascii,
     parse_grid_ascii,

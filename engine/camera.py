@@ -1,5 +1,5 @@
 """
-Module for camera-related functionality in the ARCEngine.
+Module for camera-related functionality in the Engine.
 """
 
 from typing import List, Tuple

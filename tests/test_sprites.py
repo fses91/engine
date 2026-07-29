@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from arcengine import BlockingMode, InteractionMode, Sprite
+from engine import BlockingMode, InteractionMode, Sprite
 
 
 class TestSprite(unittest.TestCase):

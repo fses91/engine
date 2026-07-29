@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from arcengine import (
+from engine import (
     ActionInput,
     ARCBaseGame,
     BlockingMode,

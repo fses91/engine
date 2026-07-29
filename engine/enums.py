@@ -1,5 +1,5 @@
 """
-Module containing enums used throughout the ARCEngine.
+Module containing enums used throughout the Engine.
 """
 
 from __future__ import annotations

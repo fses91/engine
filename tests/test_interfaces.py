@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from arcengine import (
+from engine import (
     RenderableUserDisplay,
     Sprite,
     ToggleableUserDisplay,

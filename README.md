@@ -1,4 +1,4 @@
-# ARCEngine
+# Engine
 
 A compact, sprite-based Python engine for ARC-AGI-3 games. Game source uses
 one-character color symbols that are easy for humans and small-context agents to
@@ -6,14 +6,48 @@ read and write. The engine handles rendering and ARC protocol conversion behind
 the symbolic API.
 
 For a short, copy-paste-ready game-authoring context, see
-[the ARCEngine agent prompt](docs/AGENT_PROMPT.md).
+[the Engine agent prompt](docs/AGENT_PROMPT.md).
 
-## Installation
+## Installation from GitHub
+
+This project is not intended to be published on PyPI. Install this repository
+directly with its Git URL:
 
 ```bash
-uv add arcengine
-# or
-pip install arcengine
+pip install "engine @ git+https://github.com/arcprize/ARCEngine.git@main"
+```
+
+If you host the repository under another account or name, replace that GitHub
+URL with your repository URL.
+
+For a private repository or SSH-based access:
+
+```bash
+pip install "engine @ git+ssh://git@github.com/arcprize/ARCEngine.git@main"
+```
+
+To use it from another project's `pyproject.toml`, add a PEP 508 direct
+reference:
+
+```toml
+[project]
+dependencies = [
+    "engine @ git+https://github.com/arcprize/ARCEngine.git@main",
+]
+```
+
+Then run `pip install .` or `uv sync` in that project. For reproducible builds,
+replace `main` with a release tag or commit SHA. With uv, the equivalent
+command is:
+
+```bash
+uv add "engine @ git+https://github.com/arcprize/ARCEngine.git@main"
+```
+
+After installation, import the library as `engine`:
+
+```python
+from engine import ARCBaseGame, Camera, Level, Sprite
 ```
 
 ## Compact symbolic grids
@@ -43,7 +77,7 @@ Symbols are case-sensitive: `B` is black while `b` is blue, `P` is pink while
 The canonical form is a list of row strings:
 
 ```python
-from arcengine import Sprite
+from engine import Sprite
 
 maze = Sprite(
     pixels=[
@@ -89,10 +123,10 @@ game-authoring model is symbolic:
 
 ## Quick Start
 
-`ARCBaseGame` is the base class for ARCEngine games. Create a game by subclassing it and overriding `step()`:
+`ARCBaseGame` is the base class for Engine games. Create a game by subclassing it and overriding `step()`:
 
 ```python
-from arcengine import ARCBaseGame, ActionInput, Camera, GameAction, Level, Sprite
+from engine import ARCBaseGame, ActionInput, Camera, GameAction, Level, Sprite
 
 class MyGame(ARCBaseGame):
     def step(self) -> None:
@@ -254,12 +288,12 @@ Get the camera pixels at a given position.
 
 ## API
 
-The public API is exported from `arcengine.__init__`:
+The public API is exported from `engine.__init__`:
 
-Import necessary components from arcengine:
+Import necessary components from engine:
 
 ```python
-from arcengine import (
+from engine import (
     ARC_COLOR_CHARS,
     ARC_COLOR_LEGEND,
     ARCBaseGame,
@@ -296,7 +330,7 @@ grid is rendered as `(empty grid)`.
 A 2D sprite with position, rotation, scale, and collision behavior.
 
 ```python
-from arcengine import Sprite, BlockingMode, InteractionMode
+from engine import Sprite, BlockingMode, InteractionMode
 
 # Create a simple 2x2 sprite
 sprite_simple = Sprite([
@@ -559,7 +593,7 @@ An enumeration defining how a sprite interacts with the game world:
 Defines the viewport and renders sprites to a 64x64 output.
 
 ```python
-from arcengine import Camera
+from engine import Camera
 
 # Create a default camera (64x64 viewport)
 camera = Camera()
@@ -646,7 +680,7 @@ The `RenderableUserDisplay` class is an abstract base class that defines the int
 
 ```python
 import numpy as np
-from arcengine import RenderableUserDisplay, Sprite
+from engine import RenderableUserDisplay, Sprite
 
 class MyUI(RenderableUserDisplay):
     def render_interface(self, frame: np.ndarray) -> np.ndarray:
@@ -675,7 +709,7 @@ Helper to draw a sprite onto a frame with clipping.
 The `ToggleableUserDisplay` class is an example implementation of `RenderableUserDisplay` that manages a collection of sprite pairs (enabled/disabled states) and provides methods to toggle between them.
 
 ```python
-from arcengine import ToggleableUserDisplay, Sprite
+from engine import ToggleableUserDisplay, Sprite
 
 # Create a toggleable UI element with sprite pairs
 ui_element = ToggleableUserDisplay([
@@ -755,7 +789,7 @@ This method renders all sprite pairs, using the enabled sprite if the pair is en
 Manages a collection of sprites and level metadata.
 
 ```python
-from arcengine import Level, Sprite, PlaceableArea
+from engine import Level, Sprite, PlaceableArea
 
 sprites = [
     Sprite(["R"], name="player"),

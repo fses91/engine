@@ -1,5 +1,5 @@
 """
-Module for sprite-related classes and functionality in the ARCEngine.
+Module for sprite-related classes and functionality in the Engine.
 """
 
 import uuid

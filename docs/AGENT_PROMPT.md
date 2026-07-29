@@ -1,6 +1,6 @@
-# ARCEngine game-authoring prompt
+# Engine game-authoring prompt
 
-You are writing a complete, deterministic ARC-AGI-3 game with `arcengine`.
+You are writing a complete, deterministic ARC-AGI-3 game with `engine`.
 Prefer small symbolic grids, named sprites, short mechanics, and explicit state.
 Use symbols for every color and sprite cell. Treat the engine's storage,
 rendering, and protocol conversion as opaque implementation details.
@@ -124,7 +124,7 @@ Useful system tags:
 ## Minimal working game
 
 ```python
-from arcengine import (
+from engine import (
     ARCBaseGame,
     ActionInput,
     BlockingMode,

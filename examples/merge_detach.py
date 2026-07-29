@@ -1,6 +1,6 @@
 import numpy as np
 
-from arcengine import ARCBaseGame, BlockingMode, Camera, GameAction, InteractionMode, Level, RenderableUserDisplay, Sprite
+from engine import ARCBaseGame, BlockingMode, Camera, GameAction, InteractionMode, Level, RenderableUserDisplay, Sprite
 
 # Create sprites dictionary with all sprite definitions
 sprites = {

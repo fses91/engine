@@ -1,4 +1,4 @@
-# ARCEngine package
+# Engine package
 
 The canonical documentation is the repository-level [README](../README.md).
 
@@ -13,7 +13,7 @@ Useful entry points:
 Sprite source uses one character per cell:
 
 ```python
-from arcengine import Camera, Sprite
+from engine import Camera, Sprite
 
 sprite = Sprite(
     [

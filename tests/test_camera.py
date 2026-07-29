@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from arcengine import Camera, InteractionMode, Sprite, ToggleableUserDisplay
+from engine import Camera, InteractionMode, Sprite, ToggleableUserDisplay
 
 
 class TestCamera(unittest.TestCase):

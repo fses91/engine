@@ -1,5 +1,5 @@
 """
-Module for the base game class in ARCEngine.
+Module for the base game class in Engine.
 """
 
 import os
@@ -18,7 +18,7 @@ MAX_FRAME_PER_ACTION: int = 1000
 
 
 class ARCBaseGame(ABC):
-    """Base class for ARCEngine games that manages levels and camera.
+    """Base class for Engine games that manages levels and camera.
 
     This is a base class that games should inherit from. and extend with game logic.
     It handles the game loop and rendering.

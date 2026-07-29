@@ -1,4 +1,4 @@
-"""Test package for ARCEngine."""
+"""Test package for Engine."""
 
 from .test_base_game import TestARCBaseGame
 from .test_benchmarking import TestSysStaticBenchmark

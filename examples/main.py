@@ -4,7 +4,7 @@ import time
 
 from simple_maze import SimpleMaze
 
-from arcengine import ActionInput, GameAction
+from engine import ActionInput, GameAction
 
 
 def main() -> None:

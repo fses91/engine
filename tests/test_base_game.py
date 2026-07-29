@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from arcengine import (
+from engine import (
     ActionInput,
     ARCBaseGame,
     BlockingMode,
@@ -897,7 +897,7 @@ class TestARCBaseGame(unittest.TestCase):
     def test_clickable_actions_camera_transformations(self):
         """Test that clickable actions properly apply camera scale and offset transformations."""
         # Create a custom camera with specific scale and offset
-        from arcengine import Camera
+        from engine import Camera
 
         custom_camera = Camera(width=32, height=32)  # This will create scale=2 and offsets for centering
 

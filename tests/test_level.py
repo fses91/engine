@@ -2,7 +2,7 @@
 
 import unittest
 
-from arcengine import BlockingMode, Level, Sprite
+from engine import BlockingMode, Level, Sprite
 
 
 class TestLevel(unittest.TestCase):
