@@ -4,14 +4,15 @@ Module for the base game class in Engine.
 
 import os
 from abc import ABC
-from typing import List, Optional, final
+from typing import List, Optional, cast, final
 
 import numpy as np
-from numpy import ndarray
+from numpy.typing import NDArray
 
 from .camera import Camera
 from .enums import ActionInput, FrameData, FrameDataRaw, GameAction, GameState
 from .level import Level
+from .palette import _format_sprite_ascii
 from .sprites import Sprite
 
 MAX_FRAME_PER_ACTION: int = 1000
@@ -217,7 +218,8 @@ class ARCBaseGame(ABC):
 
         self._set_action(action_input)
 
-        frame_list: list[ndarray | list[list[int]]] = []
+        frame_list: list[list[list[int]]] = []
+        raw_frame_list: list[NDArray[np.int8]] = []
 
         count = 0
 
@@ -231,15 +233,15 @@ class ARCBaseGame(ABC):
                 self.step()
             frame = self.camera.render(self.current_level.get_sprites())
             if raw:
-                frame_list.append(frame)
+                raw_frame_list.append(frame)
             else:
-                frame_list.append(frame.tolist())
+                frame_list.append(cast(list[list[int]], frame.tolist()))
 
         # Create and return FrameData
         if raw:
             frame_raw = FrameDataRaw()
             frame_raw.game_id = self._game_id
-            frame_raw.frame = frame_list
+            frame_raw.frame = raw_frame_list
             frame_raw.state = self._state
             frame_raw.levels_completed = self._score
             frame_raw.win_levels = self._win_score
@@ -425,18 +427,18 @@ class ARCBaseGame(ABC):
         """Called when the level is set, use this to set level specific data."""
         pass
 
-    def get_pixels_at_sprite(self, sprite: Sprite) -> ndarray:
+    def get_pixels_at_sprite(self, sprite: Sprite) -> tuple[str, ...]:
         """Get the camera pixels at a sprite.
 
         Args:
             sprite: The sprite to get the pixels at
 
         Returns:
-            list[list[int]]: The camera returned pixels at the sprite
+            tuple[str, ...]: Compact symbolic rows from the camera at the sprite
         """
         return self.get_pixels(sprite.x - self.camera.x, sprite.y - self.camera.y, sprite.width, sprite.height)
 
-    def get_pixels(self, x: int, y: int, width: int, height: int) -> ndarray:
+    def get_pixels(self, x: int, y: int, width: int, height: int) -> tuple[str, ...]:
         """Get the camera pixels at a given position.
 
         Args:
@@ -446,11 +448,11 @@ class ARCBaseGame(ABC):
             height: The height of the area to get the pixels at
 
         Returns:
-            list[list[int]]: The camera returned pixels at the given position and width/height
+            tuple[str, ...]: Compact symbolic rows for the requested region
         """
 
         frame = self.camera._raw_render(self.current_level.get_sprites())
-        return frame[y : y + height, x : x + width]
+        return tuple(_format_sprite_ascii(frame[y : y + height, x : x + width]).splitlines())
 
     def set_placeable_sprite(self, sprite: Sprite | None) -> None:
         """Set the placeable sprite.
@@ -469,7 +471,7 @@ class ARCBaseGame(ABC):
         """
         return None
 
-    def _get_hidden_state(self) -> ndarray:
+    def _get_hidden_state(self) -> NDArray[np.int8]:
         """Get the hidden state for the graph builder to use for this state.
 
         Returns:
@@ -544,7 +546,7 @@ class ARCBaseGame(ABC):
             has_every_pixel = "sys_every_pixel" in sprite._tags
 
             # Get the rendered sprite pixels (accounts for scale, rotation, etc.)
-            rendered_pixels = sprite.render()
+            rendered_pixels = sprite._render_pixels()
 
             if has_every_pixel:
                 # Every non-negative pixel is a valid action

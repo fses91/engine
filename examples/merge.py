@@ -1,5 +1,3 @@
-import numpy as np
-
 from engine import (
     ARCBaseGame,
     BlockingMode,
@@ -219,6 +217,4 @@ class Merge(ARCBaseGame):
     def check_win_condition(self) -> bool:
         source = self.get_pixels_at_sprite(self._player)
         target = self.get_pixels_at_sprite(self._target)
-        if np.array_equal(source, target):
-            return True
-        return False
+        return source == target

@@ -444,18 +444,18 @@ class TestARCBaseGame(unittest.TestCase):
 
         # Test getting pixels at sprite position
         pixels = game.get_pixels_at_sprite(sprite)
-        self.assertEqual(pixels.tolist(), [[1, 2], [3, 4]])
+        self.assertEqual(pixels, ("wg", "Gc"))
 
         # Test with camera offset
         game.camera.move(2, 2)
         pixels = game.get_pixels_at_sprite(sprite)
-        self.assertEqual(pixels.tolist(), [[1, 2], [3, 4]])
+        self.assertEqual(pixels, ("wg", "Gc"))
 
         # Test with sprite partially off screen
         game_sprite = game.current_level.get_sprites_by_name("sprite")[0]
         game_sprite.set_position(15, 15)
         pixels = game.get_pixels_at_sprite(game_sprite)
-        self.assertEqual(pixels.tolist(), [[1, 2], [3, 4]])
+        self.assertEqual(pixels, ("wg", "Gc"))
 
     def test_get_pixels(self):
         """Test getting pixels at specific coordinates."""
@@ -472,24 +472,24 @@ class TestARCBaseGame(unittest.TestCase):
 
         # Test getting pixels at specific coordinates
         pixels = game.get_pixels(5, 5, 2, 2)
-        self.assertEqual(pixels.tolist(), [[1, 2], [3, 4]])
+        self.assertEqual(pixels, ("wg", "Gc"))
 
         # Test getting pixels at overlapping area
         pixels = game.get_pixels(6, 6, 2, 2)
-        self.assertEqual(pixels.tolist(), [[4, 5], [5, 6]])
+        self.assertEqual(pixels, ("cB", "BM"))
 
         # Test with camera offset
         game.camera.move(2, 2)
         pixels = game.get_pixels(3, 3, 2, 2)
-        self.assertEqual(pixels.tolist(), [[1, 2], [3, 4]])
+        self.assertEqual(pixels, ("wg", "Gc"))
 
         # Test getting pixels outside sprite area
         pixels = game.get_pixels(0, 0, 2, 2)
-        self.assertEqual(pixels.tolist(), [[5, 5], [5, 5]])
+        self.assertEqual(pixels, ("BB", "BB"))
 
         # Test getting pixels partially outside sprite area
         pixels = game.get_pixels(4, 4, 2, 2)
-        self.assertEqual(pixels.tolist(), [[4, 5], [5, 6]])
+        self.assertEqual(pixels, ("cB", "BM"))
 
     def test_level_win_renders_two_frames(self):
         sprite1 = Sprite([[1, 1], [1, 1]], x=0, y=0)

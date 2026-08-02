@@ -5,6 +5,7 @@ Module for user display interfaces in the Engine.
 from abc import ABC, abstractmethod
 
 import numpy as np
+from numpy.typing import NDArray
 
 from .enums import InteractionMode
 from .sprites import Sprite
@@ -18,7 +19,7 @@ class RenderableUserDisplay(ABC):
     """
 
     @abstractmethod
-    def render_interface(self, frame: np.ndarray) -> np.ndarray:
+    def render_interface(self, frame: NDArray[np.int8]) -> NDArray[np.int8]:
         """Render this UI element onto the given frame.
 
         Args:
@@ -26,8 +27,8 @@ class RenderableUserDisplay(ABC):
         """
         return frame
 
-    def draw_sprite(self, frame: np.ndarray, sprite: Sprite, start_x: int, start_y: int) -> np.ndarray:
-        sprite_pixels = sprite.render()
+    def draw_sprite(self, frame: NDArray[np.int8], sprite: Sprite, start_x: int, start_y: int) -> NDArray[np.int8]:
+        sprite_pixels = sprite._render_pixels()
         sprite_height, sprite_width = sprite_pixels.shape
 
         # Calculate sprite boundaries
@@ -250,7 +251,7 @@ class ToggleableUserDisplay(RenderableUserDisplay):
         sprite_pair[0].set_interaction(InteractionMode.REMOVED)
         sprite_pair[1].set_interaction(InteractionMode.INTANGIBLE)
 
-    def render_interface(self, frame: np.ndarray) -> np.ndarray:
+    def render_interface(self, frame: NDArray[np.int8]) -> NDArray[np.int8]:
         """Render all visible sprites to the given frame.
 
         This method renders all sprites that are currently visible (not in REMOVED mode)

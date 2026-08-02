@@ -10,42 +10,50 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .enums import BlockingMode, InteractionMode
-from .palette import ColorLike, color_to_index, format_sprite_ascii, parse_grid_ascii
+from .palette import AsciiGrid, ColorSymbol, _color_to_index, _format_sprite_ascii, _parse_grid_ascii
 
-PixelGrid: TypeAlias = str | Sequence[str] | Sequence[Sequence[int | str]] | NDArray[Any]
+PixelGrid: TypeAlias = AsciiGrid
 
 
 def _coerce_pixels(pixels: PixelGrid) -> NDArray[np.int8]:
-    """Normalize symbolic or legacy numeric pixels to a 2-D int8 array."""
+    """Normalize public symbols, with runtime-only legacy numeric support."""
 
     if isinstance(pixels, str):
-        return parse_grid_ascii(pixels)
+        return _parse_grid_ascii(pixels)
 
     if isinstance(pixels, Sequence) and not isinstance(pixels, np.ndarray):
         rows = list(pixels)
         if rows and all(isinstance(row, str) for row in rows):
-            return parse_grid_ascii(cast(Sequence[str], rows))
+            return _parse_grid_ascii(rows)
 
+        # A nested symbolic grid is supported for convenience, although row
+        # strings remain the compact canonical representation.
+        if not rows:
+            return _parse_grid_ascii(cast(AsciiGrid, rows))
+        if all(isinstance(row, Sequence) for row in rows):
+            nested_rows = cast(Sequence[Sequence[Any]], rows)
+            if all(isinstance(cell, str) for row in nested_rows for cell in row):
+                return _parse_grid_ascii(cast(AsciiGrid, rows))
+
+    # Numeric grids from pre-symbol releases remain loadable at runtime so old
+    # games do not break. They are deliberately absent from PixelGrid and all
+    # public return values.
     try:
         array = np.asarray(pixels)
     except (TypeError, ValueError) as exc:
-        raise ValueError("Pixels must form a rectangular 2D grid") from exc
-
-    contains_symbols = array.dtype.kind in {"U", "S"} or (array.dtype.kind == "O" and any(isinstance(value, str) for value in array.flat))
-    if contains_symbols:
-        if array.ndim not in {1, 2}:
-            raise ValueError("Symbolic pixels must be rows of equal-length one-character symbols")
-        return parse_grid_ascii(array.tolist())
-
-    if array.ndim != 2:
-        raise ValueError("Pixels must be a 2D grid or a 2D numpy array")
-    if array.size == 0:
-        raise ValueError("Pixels cannot be empty")
-
+        raise ValueError("Pixels must form a rectangular symbolic grid") from exc
+    if array.ndim != 2 or array.size == 0:
+        raise ValueError("Pixels must form a non-empty rectangular 2D grid")
     try:
         return array.astype(np.int8, copy=False)
     except (TypeError, ValueError, OverflowError) as exc:
-        raise ValueError("Numeric pixels must contain integer-compatible values") from exc
+        raise ValueError("Pixels must contain one-character symbols") from exc
+
+
+def _symbols_from_pixels(pixels: NDArray[np.int8]) -> tuple[str, ...]:
+    """Encode an internal sprite array as immutable compact rows."""
+
+    return tuple(_format_sprite_ascii(pixels).splitlines())
 
 
 def _downscale_mode(arr: NDArray[np.int8], factor: int) -> NDArray[np.int8]:
@@ -114,7 +122,7 @@ class Sprite:
     # Valid rotation values in degrees (clockwise)
     VALID_ROTATIONS = {0, 90, 180, 270}
 
-    pixels: NDArray[np.int8]
+    _pixels: NDArray[np.int8]
     _name: str
     _x: int
     _y: int
@@ -142,14 +150,15 @@ class Sprite:
         interaction: InteractionMode | None = None,
         visible: bool = True,
         collidable: bool = True,
-        tags: list[str] = [],
+        tags: list[str] | None = None,
     ):
         """Initialize a new Sprite.
 
         Args:
-            pixels: Compact symbolic rows (for example ``["BR.", "BBB"]``), a
-                dedented multiline string, or a legacy numeric 2D grid. ``.``
-                is transparent/passable and ``X`` is transparent/solid.
+            pixels: Compact symbolic rows (for example ``["BR.", "BBB"]``)
+                or a dedented multiline string. ``.`` is transparent/passable
+                and ``X`` is transparent/solid. Numeric grids are not part of
+                the sprite-authoring API.
             name: Sprite name (default: None, will generate UUID)
             x: X coordinate in pixels (default: 0)
             y: Y coordinate in pixels (default: 0)
@@ -163,9 +172,7 @@ class Sprite:
             ValueError: If scale is 0, pixels is not a rectangular 2D grid, rotation is invalid,
                        or if downscaling factor doesn't evenly divide sprite dimensions
         """
-        self.pixels = _coerce_pixels(pixels)
-        if self.pixels.ndim != 2:
-            raise ValueError("Pixels must be a 2D grid")
+        self._pixels = _coerce_pixels(pixels)
 
         self._name = name if name is not None else str(uuid.uuid4())
         self._x = int(x)
@@ -180,7 +187,7 @@ class Sprite:
             self._interaction = _interaction_mode_from(visible, collidable)
         else:
             self._interaction = interaction
-        self._tags = tags
+        self._tags = list(tags) if tags is not None else []
 
     def clone(self, new_name: Optional[str] = None) -> "Sprite":
         """Create an independent copy of this sprite.
@@ -191,12 +198,8 @@ class Sprite:
         Returns:
             A new Sprite instance with the same properties but independent state.
         """
-        # Create a deep copy of the pixels array
-        pixels_copy = self.pixels.copy()
-
-        # Create a new sprite with copied properties
         return Sprite(
-            pixels=pixels_copy.tolist(),  # Convert back to list for constructor
+            pixels=self.pixels,
             name=new_name if new_name is not None else self._name,  # Use new name or generate new UUID
             x=self._x,
             y=self._y,
@@ -278,7 +281,7 @@ class Sprite:
 
         # For downscaling, validate dimensions are divisible by scale factor
         if scale_int < 0:
-            H, W = self.pixels.shape
+            H, W = self._pixels.shape
             factor = -scale_int + 1  # -1 -> 2, -2 -> 3, -3 -> 4, etc.
             if H % factor != 0 or W % factor != 0:
                 raise ValueError(f"Array dimensions ({H}, {W}) must be divisible by scale factor {factor}")
@@ -456,12 +459,12 @@ class Sprite:
     @property
     def width(self) -> int:
         """Get the sprite's width."""
-        return int(self.render().shape[1])
+        return int(self._render_pixels().shape[1])
 
     @property
     def height(self) -> int:
         """Get the sprite's height."""
-        return int(self.render().shape[0])
+        return int(self._render_pixels().shape[0])
 
     @property
     def is_collidable(self) -> bool:
@@ -482,10 +485,39 @@ class Sprite:
         return self
 
     @property
-    def symbols(self) -> tuple[str, ...]:
-        """Get the base sprite as immutable symbolic rows."""
+    def pixels(self) -> tuple[str, ...]:
+        """Get the base sprite as immutable compact symbolic rows."""
 
-        return tuple(self.to_ascii().splitlines())
+        return _symbols_from_pixels(self._pixels)
+
+    def set_pixels(self, pixels: PixelGrid) -> "Sprite":
+        """Replace the base grid using only compact symbolic cells."""
+
+        replacement = _coerce_pixels(pixels)
+        if self._scale < 0:
+            factor = -self._scale + 1
+            height, width = replacement.shape
+            if height % factor != 0 or width % factor != 0:
+                raise ValueError(f"Array dimensions ({height}, {width}) must be divisible by scale factor {factor}")
+        self._pixels = replacement
+        return self
+
+    def set_pixel(self, x: int, y: int, symbol: ColorSymbol) -> "Sprite":
+        """Replace one source cell with a palette, ``.`` or ``X`` symbol."""
+
+        x_int = int(x)
+        y_int = int(y)
+        height, width = self._pixels.shape
+        if x_int < 0 or y_int < 0 or x_int >= width or y_int >= height:
+            raise IndexError(f"Pixel coordinate ({x_int}, {y_int}) is outside sprite bounds {width}x{height}")
+        self._pixels[y_int, x_int] = _color_to_index(symbol, allow_special=True)
+        return self
+
+    @property
+    def symbols(self) -> tuple[str, ...]:
+        """Alias for :attr:`pixels`, retained for readability."""
+
+        return self.pixels
 
     def to_ascii(self, rendered: bool = False) -> str:
         """Return this sprite in the compact symbolic representation.
@@ -495,17 +527,22 @@ class Sprite:
                 Otherwise format the sprite's base pixels.
         """
 
-        pixels = self.render() if rendered else self.pixels
-        return format_sprite_ascii(pixels)
+        pixels = self._render_pixels() if rendered else self._pixels
+        return _format_sprite_ascii(pixels)
 
-    def render(self) -> NDArray[np.int8]:
-        """Render the sprite with current scale and rotation.
+    def render(self) -> tuple[str, ...]:
+        """Render the transformed sprite as compact symbolic rows.
 
         Returns:
-            np.ndarray: The rendered sprite as a 2D numpy array
+            tuple[str, ...]: Immutable transformed sprite rows.
         """
+        return _symbols_from_pixels(self._render_pixels())
+
+    def _render_pixels(self) -> NDArray[np.int8]:
+        """Render to the numeric grid used only inside the engine pipeline."""
+
         # Start with the base pixels
-        result = self.pixels.copy()
+        result = self._pixels.copy()
 
         # Handle rotation first (if any)
         if self.rotation != 0:
@@ -563,8 +600,8 @@ class Sprite:
                 return False
 
         # Get sprite dimensions after rendering (accounts for rotation and scaling)
-        self_pixels = self.render()
-        other_pixels = other.render()
+        self_pixels = self._render_pixels()
+        other_pixels = other._render_pixels()
         self_height, self_width = self_pixels.shape
         other_height, other_width = other_pixels.shape
 
@@ -614,7 +651,7 @@ class Sprite:
         self._x += int(dx)
         self._y += int(dy)
 
-    def color_remap(self, old_color: ColorLike | None, new_color: ColorLike) -> "Sprite":
+    def color_remap(self, old_color: ColorSymbol | None, new_color: ColorSymbol) -> "Sprite":
         """Remap the sprite's color.
 
         Args:
@@ -623,15 +660,15 @@ class Sprite:
             new_color: The new color symbol. Sprite-only ``.`` and ``X`` are
                 also accepted.
         """
-        old_index = None if old_color is None else color_to_index(old_color, allow_special=True)
-        new_index = color_to_index(new_color, allow_special=True)
+        old_index = None if old_color is None else _color_to_index(old_color, allow_special=True)
+        new_index = _color_to_index(new_color, allow_special=True)
 
         if old_index is None:
             # Replace all non-negative pixels with new_color
-            self.pixels = np.where(self.pixels >= 0, new_index, self.pixels)
+            self._pixels = np.where(self._pixels >= 0, new_index, self._pixels).astype(np.int8, copy=False)
         else:
             # Replace only pixels matching old_color
-            self.pixels = np.where(self.pixels == old_index, new_index, self.pixels)
+            self._pixels = np.where(self._pixels == old_index, new_index, self._pixels).astype(np.int8, copy=False)
         return self
 
     def merge(self, other: "Sprite") -> "Sprite":
@@ -648,8 +685,8 @@ class Sprite:
             Sprite: A new sprite containing the merged pixels
         """
         # Get rendered versions of both sprites to handle scaling/rotation
-        self_pixels = self.render()
-        other_pixels = other.render()
+        self_pixels = self._render_pixels()
+        other_pixels = other._render_pixels()
 
         # Calculate the bounds of the merged sprite
         min_x = min(self._x, other._x)
@@ -692,7 +729,7 @@ class Sprite:
         # Create and return new sprite
         return Sprite(
             name=self._name,
-            pixels=merged_pixels,
+            pixels=_symbols_from_pixels(merged_pixels),
             x=min_x,
             y=min_y,
             layer=max(self._layer, other._layer),  # Use higher layer

@@ -58,13 +58,22 @@ through the symbolic forms below.
 
 Symbolic inspection:
 
+- `sprite.pixels` → immutable source rows such as `("W.R", "BBB")`.
 - `sprite.symbols` → immutable source rows such as `("W.R", "BBB")`.
+- `sprite.render()` → immutable transformed rows using the same symbols.
+- `sprite.set_pixel(x, y, "R")` and `sprite.set_pixels(["R.", ".R"])` mutate
+  source cells without introducing color numbers.
 - `sprite.to_ascii()` → source grid as text, preserving `.` and `X`;
   `sprite.to_ascii(rendered=True)` includes transforms.
 - `format_grid_ascii(frame)` → a rendered frame as symbolic text.
 - `sprite.color_remap("R", "b")` accepts color symbols; `.` erases and `X`
   creates invisible solid cells.
 - `Camera(background="B", letter_box="G")` accepts symbols.
+
+Numeric palette indices are an output-protocol detail. They may appear in the
+frame sequence returned by `perform_action()`, but sprite construction,
+inspection, transforms, color operations, and camera-region inspection remain
+symbolic.
 
 ## Core model
 

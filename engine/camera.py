@@ -5,9 +5,10 @@ Module for camera-related functionality in the Engine.
 from typing import List, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 from .interfaces import RenderableUserDisplay
-from .palette import ARC_COLOR_CHARS, ColorLike, color_to_index
+from .palette import ARC_COLOR_CHARS, ColorSymbol, _color_to_index
 from .sprites import Sprite
 
 
@@ -31,8 +32,8 @@ class Camera:
         y: int = 0,
         width: int = 64,
         height: int = 64,
-        background: ColorLike = "B",
-        letter_box: ColorLike = "B",
+        background: ColorSymbol = "B",
+        letter_box: ColorSymbol = "B",
         interfaces: list[RenderableUserDisplay] = [],
     ):
         """Initialize a new Camera.
@@ -56,8 +57,8 @@ class Camera:
         self._y = y
         self.width = width
         self.height = height
-        self._background = color_to_index(background)
-        self._letter_box = color_to_index(letter_box)
+        self._background = _color_to_index(background)
+        self._letter_box = _color_to_index(letter_box)
         self._interfaces: List[RenderableUserDisplay] = []
 
         if interfaces:
@@ -154,9 +155,9 @@ class Camera:
         return ARC_COLOR_CHARS[max(0, min(15, self._background))]
 
     @background.setter
-    def background(self, value: ColorLike) -> None:
+    def background(self, value: ColorSymbol) -> None:
         """Set the camera's background color."""
-        self._background = color_to_index(value)
+        self._background = _color_to_index(value)
 
     @property
     def letter_box(self) -> str:
@@ -164,9 +165,9 @@ class Camera:
         return ARC_COLOR_CHARS[max(0, min(15, self._letter_box))]
 
     @letter_box.setter
-    def letter_box(self, value: ColorLike) -> None:
+    def letter_box(self, value: ColorSymbol) -> None:
         """Set the camera's letter box color."""
-        self._letter_box = color_to_index(value)
+        self._letter_box = _color_to_index(value)
 
     def resize(self, width: int, height: int) -> None:
         """Resize the camera.
@@ -212,7 +213,7 @@ class Camera:
 
         return scale, x_offset, y_offset
 
-    def _raw_render(self, sprites: List[Sprite]) -> np.ndarray:
+    def _raw_render(self, sprites: List[Sprite]) -> NDArray[np.int8]:
         """Internal method to render the camera view.
 
         Args:
@@ -234,7 +235,7 @@ class Camera:
 
         for sprite in sorted_sprites:
             # Get the sprite's rendered pixels (handles rotation and scaling)
-            sprite_pixels = sprite.render()
+            sprite_pixels = sprite._render_pixels()
             sprite_height, sprite_width = sprite_pixels.shape
 
             # Calculate sprite position relative to camera
@@ -268,7 +269,7 @@ class Camera:
 
         return output
 
-    def render(self, sprites: List[Sprite]) -> np.ndarray:
+    def render(self, sprites: List[Sprite]) -> NDArray[np.int8]:
         """Render the camera view.
 
         The rendered output is always 64x64 pixels. If the camera's viewport is smaller,
@@ -282,7 +283,7 @@ class Camera:
             np.ndarray: The rendered view as a 64x64 numpy array
         """
         # Start with a letter-boxed canvas
-        output = np.full((self.MAX_DIMENSION, self.MAX_DIMENSION), self._letter_box, dtype=np.int8)
+        output: NDArray[np.int8] = np.full((self.MAX_DIMENSION, self.MAX_DIMENSION), self._letter_box, dtype=np.int8)
 
         # Get the raw camera view
         view = self._raw_render(sprites)

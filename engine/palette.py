@@ -18,7 +18,7 @@ ARC_TRANSPARENT_CHAR = "."
 ARC_INVISIBLE_BLOCKING_CHAR = "X"
 ARC_SPRITE_LEGEND = f"{ARC_COLOR_LEGEND}, .=transparent/passable, X=transparent/solid"
 
-ColorLike: TypeAlias = int | str
+ColorSymbol: TypeAlias = str
 AsciiGrid: TypeAlias = str | Sequence[str] | Sequence[Sequence[str]]
 NumericGrid: TypeAlias = Sequence[Sequence[int]] | NDArray[Any]
 
@@ -29,18 +29,16 @@ _SPECIAL_TO_INDEX = {
 }
 
 
-def color_to_index(color: ColorLike, *, allow_special: bool = False) -> int:
-    """Convert one color symbol to its numeric palette index.
-
-    Integer inputs are returned as integers for compatibility with the original
-    numeric API. ``.`` and ``X`` are accepted only when ``allow_special=True``.
-    """
+def _color_to_index(color: ColorSymbol, *, allow_special: bool = False) -> int:
+    """Convert one public color symbol to its private palette index."""
 
     if not isinstance(color, str):
+        # Runtime compatibility for games authored before the symbol API. The
+        # public type deliberately remains symbol-only.
         try:
             return int(color)
         except (TypeError, ValueError) as exc:
-            raise TypeError(f"Color must be an integer or one-character symbol, got {color!r}") from exc
+            raise TypeError(f"Color must be a one-character symbol, got {color!r}") from exc
 
     if len(color) != 1:
         raise ValueError(f"Color symbol must be exactly one character, got {color!r}")
@@ -95,7 +93,7 @@ def _ascii_rows(grid: AsciiGrid) -> list[str]:
     return rows
 
 
-def parse_grid_ascii(grid: AsciiGrid) -> NDArray[np.int8]:
+def _parse_grid_ascii(grid: AsciiGrid) -> NDArray[np.int8]:
     """Decode compact symbolic sprite rows to a 2-D ``np.int8`` array.
 
     The 16 ARC color symbols map to palette indices 0..15. Sprite-only ``.``
@@ -110,7 +108,7 @@ def parse_grid_ascii(grid: AsciiGrid) -> NDArray[np.int8]:
         decoded_row: list[int] = []
         for column_number, char in enumerate(row, start=1):
             try:
-                decoded_row.append(color_to_index(char, allow_special=True))
+                decoded_row.append(_color_to_index(char, allow_special=True))
             except ValueError as exc:
                 raise ValueError(f"Unknown pixel symbol {char!r} at row {row_number}, column {column_number}") from exc
         decoded.append(decoded_row)
@@ -127,7 +125,7 @@ def format_grid_ascii(grid: NumericGrid) -> str:
     """Format a rendered numeric ARC grid using the compact 16-color alphabet.
 
     Values are clamped to 0..15, matching the ARC observation formatter. Use
-    :func:`format_sprite_ascii` when negative sprite cells must round-trip.
+    Sprite internals use a separate formatter so negative cells can round-trip.
     """
 
     _validate_grid_array(grid)
@@ -143,7 +141,7 @@ def format_grid_ascii(grid: NumericGrid) -> str:
     return "\n".join(lines)
 
 
-def format_sprite_ascii(grid: NumericGrid) -> str:
+def _format_sprite_ascii(grid: NumericGrid) -> str:
     """Format numeric sprite pixels, preserving both negative cell semantics."""
 
     _validate_grid_array(grid)
@@ -171,11 +169,6 @@ __all__ = [
     "ARC_TRANSPARENT_CHAR",
     "ARC_INVISIBLE_BLOCKING_CHAR",
     "ARC_SPRITE_LEGEND",
-    "AsciiGrid",
-    "ColorLike",
-    "NumericGrid",
-    "color_to_index",
-    "parse_grid_ascii",
+    "ColorSymbol",
     "format_grid_ascii",
-    "format_sprite_ascii",
 ]

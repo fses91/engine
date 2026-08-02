@@ -15,9 +15,9 @@ from engine import (
     format_grid_ascii,
 )
 from engine.palette import (
-    color_to_index,
-    format_sprite_ascii,
-    parse_grid_ascii,
+    _color_to_index,
+    _format_sprite_ascii,
+    _parse_grid_ascii,
 )
 
 EXPECTED_COLOR_LEGEND = "W=white, w=light gray, g=gray, G=dark gray, c=charcoal, B=black, M=magenta, P=pink, R=red, b=blue, S=sky blue, Y=yellow, O=orange, r=dark red, N=light green, p=purple"
@@ -34,25 +34,25 @@ class TestPaletteConstantsAndHelpers(unittest.TestCase):
     def test_every_palette_symbol_maps_to_its_index(self):
         for expected_index, symbol in enumerate(ARC_COLOR_CHARS):
             with self.subTest(symbol=symbol):
-                self.assertEqual(color_to_index(symbol), expected_index)
+                self.assertEqual(_color_to_index(symbol), expected_index)
 
-        self.assertEqual(color_to_index(ARC_TRANSPARENT_CHAR, allow_special=True), -1)
-        self.assertEqual(color_to_index(ARC_INVISIBLE_BLOCKING_CHAR, allow_special=True), -2)
+        self.assertEqual(_color_to_index(ARC_TRANSPARENT_CHAR, allow_special=True), -1)
+        self.assertEqual(_color_to_index(ARC_INVISIBLE_BLOCKING_CHAR, allow_special=True), -2)
 
     def test_palette_mapping_is_case_sensitive(self):
-        self.assertNotEqual(color_to_index("W"), color_to_index("w"))
-        self.assertNotEqual(color_to_index("G"), color_to_index("g"))
-        self.assertNotEqual(color_to_index("B"), color_to_index("b"))
-        self.assertNotEqual(color_to_index("P"), color_to_index("p"))
+        self.assertNotEqual(_color_to_index("W"), _color_to_index("w"))
+        self.assertNotEqual(_color_to_index("G"), _color_to_index("g"))
+        self.assertNotEqual(_color_to_index("B"), _color_to_index("b"))
+        self.assertNotEqual(_color_to_index("P"), _color_to_index("p"))
 
     def test_unknown_color_symbol_is_rejected(self):
         with self.assertRaises(ValueError):
-            color_to_index("?")
+            _color_to_index("?")
         with self.assertRaises(ValueError):
-            color_to_index("WW")
+            _color_to_index("WW")
 
     def test_parse_and_format_all_palette_values(self):
-        parsed = parse_grid_ascii([ARC_COLOR_CHARS])
+        parsed = _parse_grid_ascii([ARC_COLOR_CHARS])
 
         self.assertIsInstance(parsed, np.ndarray)
         self.assertEqual(parsed.dtype, np.int8)
@@ -73,13 +73,13 @@ class TestPaletteConstantsAndHelpers(unittest.TestCase):
 
     def test_sprite_formatter_preserves_special_cells(self):
         pixels = np.array([[-2, -1, 0, 15]], dtype=np.int8)
-        self.assertEqual(format_sprite_ascii(pixels), "X.Wp")
+        self.assertEqual(_format_sprite_ascii(pixels), "X.Wp")
 
 
 class TestAsciiGridValidation(unittest.TestCase):
     def assert_unknown_cell_has_location(self, grid):
         with self.assertRaises(ValueError) as ctx:
-            parse_grid_ascii(grid)
+            _parse_grid_ascii(grid)
 
         message = str(ctx.exception)
         self.assertIn("?", message)
@@ -97,20 +97,20 @@ class TestAsciiGridValidation(unittest.TestCase):
 
     def test_ragged_rows_are_rejected(self):
         with self.assertRaises(ValueError):
-            parse_grid_ascii(["WW", "W"])
+            _parse_grid_ascii(["WW", "W"])
         with self.assertRaises(ValueError):
             Sprite(["WW", "W"])
 
     def test_empty_grids_are_rejected(self):
         for grid in ([], "", " \n "):
             with self.subTest(grid=grid), self.assertRaises(ValueError):
-                parse_grid_ascii(grid)
+                _parse_grid_ascii(grid)
             with self.subTest(sprite_grid=grid), self.assertRaises(ValueError):
                 Sprite(grid)
 
     def test_empty_rows_are_rejected(self):
         with self.assertRaises(ValueError):
-            parse_grid_ascii([""])
+            _parse_grid_ascii([""])
         with self.assertRaises(ValueError):
             Sprite([[]])
 
@@ -129,14 +129,11 @@ class TestAsciiGridValidation(unittest.TestCase):
 
 
 class TestSymbolicSprite(unittest.TestCase):
-    def test_list_of_symbol_rows_normalizes_to_numeric_int8(self):
+    def test_list_of_symbol_rows_stays_symbolic_publicly(self):
         sprite = Sprite(["Ww.", "gGX"])
-        expected = np.array([[0, 1, -1], [2, 3, -2]], dtype=np.int8)
 
-        self.assertEqual(sprite.pixels.dtype, np.int8)
-        self.assertEqual(sprite.render().dtype, np.int8)
-        np.testing.assert_array_equal(sprite.pixels, expected)
-        np.testing.assert_array_equal(sprite.render(), expected)
+        self.assertEqual(sprite.pixels, ("Ww.", "gGX"))
+        self.assertEqual(sprite.render(), ("Ww.", "gGX"))
 
     def test_dedented_multiline_sprite(self):
         sprite = Sprite(
@@ -145,17 +142,13 @@ class TestSymbolicSprite(unittest.TestCase):
                 gGX
             """
         )
-        expected = np.array([[0, 1, -1], [2, 3, -2]], dtype=np.int8)
-
-        np.testing.assert_array_equal(sprite.pixels, expected)
+        self.assertEqual(sprite.pixels, ("Ww.", "gGX"))
 
     def test_nested_single_character_symbol_lists(self):
         sprite = Sprite([["W", "w", "."], ["g", "G", "X"]])
-        expected = np.array([[0, 1, -1], [2, 3, -2]], dtype=np.int8)
+        self.assertEqual(sprite.pixels, ("Ww.", "gGX"))
 
-        np.testing.assert_array_equal(sprite.pixels, expected)
-
-    def test_symbolic_and_numeric_sprites_render_identically(self):
+    def test_legacy_numeric_input_is_never_exposed(self):
         symbolic = Sprite(
             ["Ww.", "gGX"],
             rotation=90,
@@ -169,9 +162,9 @@ class TestSymbolicSprite(unittest.TestCase):
             scale=2,
         )
 
-        self.assertEqual(symbolic.render().dtype, np.int8)
-        np.testing.assert_array_equal(symbolic.pixels, numeric.pixels)
-        np.testing.assert_array_equal(symbolic.render(), numeric.render())
+        self.assertEqual(symbolic.pixels, numeric.pixels)
+        self.assertEqual(symbolic.render(), numeric.render())
+        self.assertTrue(all(isinstance(row, str) for row in numeric.pixels))
 
     def test_to_ascii_can_format_source_or_rendered_pixels(self):
         sprite = Sprite(["Ww", "gG"], rotation=90)
@@ -180,6 +173,18 @@ class TestSymbolicSprite(unittest.TestCase):
         self.assertEqual(sprite.to_ascii(), "Ww\ngG")
         self.assertEqual(sprite.to_ascii(rendered=False), "Ww\ngG")
         self.assertEqual(sprite.to_ascii(rendered=True), "gW\nGw")
+
+    def test_source_grid_mutations_are_symbolic(self):
+        sprite = Sprite(["W.", "XX"])
+
+        sprite.set_pixel(1, 0, "R")
+        self.assertEqual(sprite.pixels, ("WR", "XX"))
+
+        sprite.set_pixels(["b.", ".b"])
+        self.assertEqual(sprite.pixels, ("b.", ".b"))
+
+        with self.assertRaises(IndexError):
+            sprite.set_pixel(2, 0, "W")
 
     def test_special_cells_have_distinct_collision_behavior(self):
         transparent = Sprite(["."], blocking=BlockingMode.PIXEL_PERFECT)
@@ -197,7 +202,7 @@ class TestSymbolicSprite(unittest.TestCase):
     def test_invisible_solid_cells_survive_downscaling(self):
         sprite = Sprite(["XX", "XX"], scale=-1)
 
-        np.testing.assert_array_equal(sprite.render(), np.array([[-2]], dtype=np.int8))
+        self.assertEqual(sprite.render(), ("X",))
 
 
 class TestSymbolicColorOperations(unittest.TestCase):
@@ -236,21 +241,20 @@ class TestSymbolicColorOperations(unittest.TestCase):
         sprite = Sprite(["Ww.X"])
 
         sprite.color_remap("W", "R")
-        np.testing.assert_array_equal(sprite.pixels, np.array([[8, 1, -1, -2]], dtype=np.int8))
+        self.assertEqual(sprite.pixels, ("Rw.X",))
 
         sprite.color_remap(".", "g")
-        np.testing.assert_array_equal(sprite.pixels, np.array([[8, 1, 2, -2]], dtype=np.int8))
+        self.assertEqual(sprite.pixels, ("RwgX",))
 
         sprite.color_remap("X", ".")
-        np.testing.assert_array_equal(sprite.pixels, np.array([[8, 1, 2, -1]], dtype=np.int8))
+        self.assertEqual(sprite.pixels, ("Rwg.",))
 
     def test_color_remap_none_changes_only_visible_cells(self):
         sprite = Sprite(["W.X"])
 
         sprite.color_remap(None, "N")
 
-        np.testing.assert_array_equal(sprite.pixels, np.array([[14, -1, -2]], dtype=np.int8))
-        self.assertEqual(sprite.pixels.dtype, np.int8)
+        self.assertEqual(sprite.pixels, ("N.X",))
 
 
 if __name__ == "__main__":

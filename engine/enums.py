@@ -8,7 +8,7 @@ import json
 from enum import Enum, auto
 from typing import Any, List, Optional, Type, Union
 
-from numpy import ndarray
+from numpy.typing import NDArray
 from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
 MAX_REASONING_BYTES = 16 * 1024  # 16 KB guard-rail
@@ -157,14 +157,14 @@ class FrameDataRaw(BaseModel):
     available_actions: list[int] = Field(default_factory=list)
 
     # runtime-only, not validated, not serialized
-    _frame: List[ndarray] = PrivateAttr(default_factory=list)
+    _frame: List[NDArray[Any]] = PrivateAttr(default_factory=list)
 
     @property
-    def frame(self) -> List[ndarray]:
+    def frame(self) -> List[NDArray[Any]]:
         return self._frame
 
     @frame.setter
-    def frame(self, value: List[ndarray]) -> None:
+    def frame(self, value: List[NDArray[Any]]) -> None:
         self._frame = value
 
     def is_empty(self) -> bool:

@@ -42,8 +42,11 @@ Sprite(
 remains symbolic throughout the game-authoring API. The engine privately
 compiles it for transforms, rendering, collision, and protocol output.
 
-Use `Sprite.symbols` for immutable source rows, `Sprite.to_ascii()` for a text
-view, and `format_grid_ascii()` to convert a rendered frame into symbolic text.
+Use `Sprite.pixels` (or its `Sprite.symbols` alias) for immutable source rows,
+`Sprite.render()` for transformed symbolic rows, `Sprite.to_ascii()` for a text
+view, and `format_grid_ascii()` to convert a generated numeric frame into
+symbolic text. Palette indices stay inside the render pipeline until frame
+generation.
 
 ## Sprites and collision
 

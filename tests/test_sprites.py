@@ -39,9 +39,9 @@ class TestSprite(unittest.TestCase):
     def test_sprite_initialization(self):
         """Test basic sprite initialization with different input types."""
         # Test with valid 2D list
-        pixels_list = [[1, 2], [3, 4]]
+        pixels_list = ["wg", "Gc"]
         sprite = Sprite(pixels_list)
-        self.assertTrue(np.array_equal(sprite.pixels, np.array(pixels_list, dtype=np.int8)))
+        self.assertEqual(sprite.pixels, ("wg", "Gc"))
         self.assertEqual(sprite.x, 0)
         self.assertEqual(sprite.y, 0)
         self.assertEqual(sprite.scale, 1)
@@ -59,7 +59,7 @@ class TestSprite(unittest.TestCase):
             blocking=BlockingMode.BOUNDING_BOX,
             interaction=InteractionMode.INTANGIBLE,
         )
-        self.assertTrue(np.array_equal(sprite.pixels, np.array(pixels_list, dtype=np.int8)))
+        self.assertEqual(sprite.pixels, ("wg", "Gc"))
         self.assertEqual(sprite.x, 10)
         self.assertEqual(sprite.y, 20)
         self.assertEqual(sprite.scale, 2)
@@ -252,19 +252,17 @@ class TestSprite(unittest.TestCase):
 
     def test_sprite_render_no_transform(self):
         """Test sprite rendering without any transformations."""
-        pixels = [[1, 2], [3, 4]]
+        pixels = ["wg", "Gc"]
         sprite = Sprite(pixels)
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, np.array(pixels, dtype=np.int8)))
-        self.assertEqual(rendered.dtype, np.int8)
+        self.assertEqual(rendered, ("wg", "Gc"))
 
     def test_sprite_from_ndarray(self):
         """Test sprite rendering without any transformations."""
         pixels = np.array([[4, 3], [2, 1]], dtype=np.int8)
         sprite = Sprite(pixels)
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, pixels))
-        self.assertEqual(rendered.dtype, np.int8)
+        self.assertEqual(rendered, ("cG", "gw"))
 
     def test_sprite_render_rotation(self):
         """Test sprite rotation rendering."""
@@ -272,27 +270,24 @@ class TestSprite(unittest.TestCase):
 
         # Test 90 degree rotation (clockwise)
         sprite = Sprite(pixels, rotation=90)
-        expected_90 = np.array([[3, 1], [4, 2]], dtype=np.int8)
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_90))
+        self.assertEqual(rendered, ("Gw", "cg"))
 
         # Test 180 degree rotation
         sprite.set_rotation(180)
-        expected_180 = np.array([[4, 3], [2, 1]], dtype=np.int8)
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_180))
+        self.assertEqual(rendered, ("cG", "gw"))
 
         # Test 270 degree rotation
         sprite.set_rotation(270)
-        expected_270 = np.array([[2, 4], [1, 3]], dtype=np.int8)
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_270))
+        self.assertEqual(rendered, ("gc", "wG"))
 
         # Test negative rotation
         sprite.set_rotation(0)
         sprite.rotate(-90)  # Should be equivalent to 270
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_270))
+        self.assertEqual(rendered, ("gc", "wG"))
 
     def test_sprite_render_scaling(self):
         """Test sprite scaling rendering."""
@@ -307,50 +302,18 @@ class TestSprite(unittest.TestCase):
 
         # Test upscaling by 2
         sprite = Sprite(pixels, scale=2)
-        expected_upscale = np.array(
-            [
-                [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
-                [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
-                [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
-                [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
-                [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
-                [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
-                [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-                [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-                [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-                [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-                [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-                [3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_upscale))
+        self.assertEqual(rendered, tuple(["wwwwwwgggggg"] * 6 + ["GGGGGGcccccc"] * 6))
 
         # Test downscaling by 2 (scale=-1, half size)
         sprite = Sprite(pixels, scale=-1)
-        expected_downscale = np.array(
-            [
-                [1, 2, 2],
-                [3, 4, 4],
-                [3, 4, 4],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_downscale))
+        self.assertEqual(rendered, ("wgg", "Gcc", "Gcc"))
 
         # Test downscaling by 3 (scale=-2, one-third size)
         sprite = Sprite(pixels, scale=-2)
-        expected_downscale = np.array(
-            [
-                [1, 2],
-                [3, 4],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected_downscale))
+        self.assertEqual(rendered, ("wg", "Gc"))
 
     def test_sprite_render_combined(self):
         """Test sprite rendering with both rotation and scaling."""
@@ -365,42 +328,18 @@ class TestSprite(unittest.TestCase):
 
         # Test 90 degree rotation with scale 2
         sprite = Sprite(pixels, rotation=90, scale=2)
-        expected = np.array(
-            [
-                [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1],
-                [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1],
-                [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1],
-                [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1],
-                [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1],
-                [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1],
-                [4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2],
-                [4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2],
-                [4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2],
-                [4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2],
-                [4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2],
-                [4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, tuple(["GGGGGGwwwwww"] * 6 + ["ccccccgggggg"] * 6))
 
         # Test 90 degree rotation with scale -2 (one-third size)
         sprite = Sprite(pixels, rotation=90, scale=-2)
-        expected = np.array(
-            [
-                [3, 1],
-                [4, 2],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, ("Gw", "cg"))
 
     def test_sprite_clone(self):
         """Test sprite cloning functionality."""
         # Create original sprite with some non-default values
-        pixels = [[1, 2], [3, 4]]
+        pixels = ["wg", "Gc"]
         original = Sprite(
             pixels=pixels,
             name="original",
@@ -413,7 +352,7 @@ class TestSprite(unittest.TestCase):
 
         # Create clone with default name (should be the same name)
         clone1 = original.clone()
-        self.assertTrue(np.array_equal(clone1.pixels, original.pixels))
+        self.assertEqual(clone1.pixels, original.pixels)
         self.assertEqual(clone1.x, original.x)
         self.assertEqual(clone1.y, original.y)
         self.assertEqual(clone1.scale, original.scale)
@@ -434,14 +373,16 @@ class TestSprite(unittest.TestCase):
         self.assertEqual(clone1.rotation, 90)
         self.assertEqual(clone1.scale, 2)
 
-        # Modify pixels of original
-        original.pixels[0, 0] = 9
-        self.assertEqual(clone1.pixels[0, 0], 1)  # Should keep original value
+        # Public rows are immutable and mutating the original remains isolated.
+        with self.assertRaises(TypeError):
+            original.pixels[0] = "bb"  # type: ignore[index]
+        original.color_remap("w", "b")
+        self.assertEqual(clone1.pixels, ("wg", "Gc"))
 
         # Verify rendered output is independent
         original_rendered = original.render()
         clone1_rendered = clone1.render()
-        self.assertFalse(np.array_equal(original_rendered, clone1_rendered))
+        self.assertNotEqual(original_rendered, clone1_rendered)
 
     def test_interaction_mode(self):
         """Test interaction mode functionality."""
@@ -610,16 +551,8 @@ class TestSprite(unittest.TestCase):
         ]
 
         sprite = Sprite(pixels, mirror_ud=True).clone()
-        expected = np.array(
-            [
-                [3, 3, 3],
-                [2, 2, 2],
-                [1, 1, 1],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, ("GGG", "ggg", "www"))
 
         pixels = [
             [1, 2, 3, 4],
@@ -629,27 +562,18 @@ class TestSprite(unittest.TestCase):
         ]
 
         sprite = Sprite(pixels, mirror_lr=True)
-        expected = np.array(
-            [
-                [4, 3, 2, 1],
-                [4, 3, 2, 1],
-                [4, 3, 2, 1],
-                [4, 3, 2, 1],
-            ],
-            dtype=np.int8,
-        )
         rendered = sprite.render()
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, ("cGgw",) * 4)
 
     def test_sprite_color_remap(self):
         """Test sprite color remap functionality."""
-        sprite = Sprite([[1, 2, 3, -1]], x=0, y=0)
-        sprite.color_remap(1, 4)
-        self.assertTrue(np.array_equal(sprite.pixels, [[4, 2, 3, -1]]))
+        sprite = Sprite(["wgG."], x=0, y=0)
+        sprite.color_remap("w", "c")
+        self.assertEqual(sprite.pixels, ("cgG.",))
 
-        sprite = Sprite([[1, 2, 3, -1]], x=0, y=0)
-        sprite.color_remap(None, 4)
-        self.assertTrue(np.array_equal(sprite.pixels, [[4, 4, 4, -1]]))
+        sprite = Sprite(["wgG."], x=0, y=0)
+        sprite.color_remap(None, "c")
+        self.assertEqual(sprite.pixels, ("ccc.",))
 
     def test_merge_basic(self):
         """Test basic sprite merging with overlapping pixels."""
@@ -661,8 +585,8 @@ class TestSprite(unittest.TestCase):
         merged = sprite1.merge(sprite2)
 
         # Check the merged pixels
-        result = merged.pixels.tolist()
-        expected = [[1, 1, -1, -1], [1, -1, 1, 2], [-1, 1, 1, -1], [-1, 2, -1, 2]]
+        result = merged.pixels
+        expected = ("ww..", "w.wg", ".ww.", ".g.g")
         self.assertEqual(result, expected)
         assert merged.x == 0
         assert merged.y == 0
@@ -692,8 +616,8 @@ class TestSprite(unittest.TestCase):
         sprite2 = Sprite(pixels=[[8, 8], [-1, 8]], x=1, y=0)
         merged = sprite1.merge(sprite2)
 
-        result = merged.pixels.tolist()
-        expected = [[11, 8, 8], [11, 9, 8], [11, -1, -1]]
+        result = merged.pixels
+        expected = ("YRR", "YbR", "Y..")
         self.assertEqual(result, expected)
         assert merged.x == 0
         assert merged.y == 0
@@ -732,10 +656,10 @@ class TestSprite(unittest.TestCase):
         assert merged.height == 3
 
         # Check pixels are in correct positions
-        assert merged.pixels[0, 0] == 1
-        assert merged.pixels[2, 2] == 2
-        assert merged.pixels[0, 1] == -1
-        assert merged.pixels[1, 0] == -1
+        assert merged.pixels[0][0] == "w"
+        assert merged.pixels[2][2] == "g"
+        assert merged.pixels[0][1] == "."
+        assert merged.pixels[1][0] == "."
 
     def test_merge_mirror(self):
         """Test merging sprites with render alterations works"""
@@ -751,10 +675,10 @@ class TestSprite(unittest.TestCase):
         assert merged.height == 4
 
         # Check pixels are in correct positions
-        assert merged.pixels[0, 0] == 2
-        assert merged.pixels[0, 1] == 1
-        assert merged.pixels[2, 2] == 3
-        assert merged.pixels[3, 2] == 2
+        assert merged.pixels[0][0] == "g"
+        assert merged.pixels[0][1] == "w"
+        assert merged.pixels[2][2] == "G"
+        assert merged.pixels[3][2] == "g"
 
     def test_merge_tags(self):
         """Test merging sprites with different tags."""
@@ -781,9 +705,9 @@ class TestSprite(unittest.TestCase):
         merged1 = sprite1.merge(sprite2)
         merged2 = sprite2.merge(sprite1)
 
-        result1 = merged1.pixels.tolist()
-        result2 = merged2.pixels.tolist()
-        expected = [[-2, 1, -1], [1, 1, -1], [-1, -1, 2]]
+        result1 = merged1.pixels
+        result2 = merged2.pixels
+        expected = ("Xw.", "ww.", "..g")
         self.assertEqual(result1, expected)
         self.assertEqual(result2, expected)
 
@@ -801,36 +725,15 @@ class TestSprite(unittest.TestCase):
         )
 
         rendered = sprite.render()
-        expected = np.array(
-            [
-                [-1, 8],
-                [8, 8],
-            ],
-            dtype=np.int8,
-        )
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, (".R", "RR"))
 
         # Make sure it also works with rotation
         sprite.set_rotation(90)
         rendered = sprite.render()
-        expected = np.array(
-            [
-                [8, -1],
-                [8, 8],
-            ],
-            dtype=np.int8,
-        )
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, ("R.", "RR"))
 
         # Make sure it also works with mirroring
         sprite.set_rotation(0)
         sprite.set_mirror_ud(True)
         rendered = sprite.render()
-        expected = np.array(
-            [
-                [8, 8],
-                [-1, 8],
-            ],
-            dtype=np.int8,
-        )
-        self.assertTrue(np.array_equal(rendered, expected))
+        self.assertEqual(rendered, ("RR", ".R"))

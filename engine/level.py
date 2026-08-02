@@ -203,7 +203,7 @@ class Level:
         for sprite in self._sorted_sprites:
             if (ignore_collidable or sprite.is_collidable) and x >= sprite.x and y >= sprite.y and x < sprite.x + sprite.width and y < sprite.y + sprite.height:
                 if sprite.blocking == BlockingMode.PIXEL_PERFECT:
-                    pixels = sprite.render()
+                    pixels = sprite._render_pixels()
                     if pixels[y - sprite.y][x - sprite.x] == -1:
                         continue
                 if tag is None or tag in sprite.tags:

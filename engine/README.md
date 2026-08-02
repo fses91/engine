@@ -28,3 +28,8 @@ camera = Camera(background="B", letter_box="G")
 `WwgGcBMPRbSYOrNp` encodes the 16 ARC colors. `.` is transparent and
 passable; `X` is invisible and solid. Game source uses symbols throughout;
 storage and protocol conversion are handled inside the engine.
+
+Both `sprite.pixels` and `sprite.render()` return immutable tuples of compact
+row strings. Numeric palette indices appear only in generated camera/protocol
+frames, such as `game.perform_action(...).frame`.
+Use `set_pixel()` or `set_pixels()` when game logic needs to mutate the grid.

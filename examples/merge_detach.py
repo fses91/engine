@@ -252,9 +252,7 @@ class MergeDetatch(ARCBaseGame):
     def check_win_condition(self) -> bool:
         source = self.get_pixels_at_sprite(self._player)
         target = self.get_pixels_at_sprite(self._target)
-        if np.array_equal(source, target):
-            return True
-        return False
+        return source == target
 
     def attach(self, player: Sprite, other: Sprite, dx: int, dy: int) -> None:
         self._player = self._player.merge(other)

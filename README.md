@@ -114,12 +114,20 @@ game-authoring model is symbolic:
 
 - `Camera(background="B", letter_box="G")` uses color symbols.
 - `sprite.color_remap("R", "b")` accepts symbols, including `.` and `X`.
+- `sprite.pixels` returns immutable compact source rows.
 - `sprite.symbols` returns immutable symbolic rows.
+- `sprite.render()` returns immutable transformed rows, still as symbols.
+- `sprite.set_pixel(x, y, symbol)` and `sprite.set_pixels(rows)` provide
+  symbol-only source-grid mutation.
 - `sprite.to_ascii()` returns the sprite's source grid using color symbols and
   preserves `.`/`X`; `sprite.to_ascii(rendered=True)` includes its current
   transforms.
 - `format_grid_ascii(frame)` converts an engine frame to the same compact
   symbolic representation for reasoning or debugging.
+
+Numeric palette indices are exposed only by generated frame output, including
+the frame sequence returned by `perform_action()`. Sprite and camera-region
+inspection stays symbolic.
 
 ## Quick Start
 
@@ -271,14 +279,14 @@ Hook called when the level is set. Override to apply level-specific setup.
 Get the camera pixels at a sprite's location.
 
 - `sprite`: The sprite to sample
-- Returns: A numpy array of pixels covering the sprite's area
+- Returns: Immutable compact symbolic rows covering the sprite's area
 
 ##### `get_pixels(x, y, width, height)`
 Get the camera pixels at a given position.
 
 - `x`, `y`: Top-left position in camera space
 - `width`, `height`: Dimensions of the sample area
-- Returns: A numpy array of pixels for the given region
+- Returns: Immutable compact symbolic rows for the given region
 
 #### Notes
 
@@ -382,6 +390,7 @@ sprite_custom = Sprite(
 - `scale: int`
 - `rotation: int`
 - `blocking: BlockingMode`
+- `pixels: tuple[str, ...]`
 - `symbols: tuple[str, ...]`
 - `interaction: InteractionMode`
 - `tags: list[str]`
@@ -408,7 +417,7 @@ Initialize a new Sprite.
 - `visible`, `collidable`: Used only when `interaction` is `None`
 - `tags`: Optional list of string tags
 
-Raises `ValueError` if scale is 0, pixels is not a 2D list/array, rotation is invalid,
+Raises `ValueError` if scale is 0, pixels is not a rectangular symbolic grid, rotation is invalid,
 or if downscaling factor doesn't evenly divide sprite dimensions.
 
 ##### `clone(new_name=None)`
@@ -527,8 +536,14 @@ Set the sprite's name.
 ##### `render()`
 Render the sprite with current scale and rotation.
 
-- Returns: The engine render grid
+- Returns: Immutable compact symbolic rows with all transforms applied
 - Raises `ValueError` if downscaling factor doesn't evenly divide the sprite dimensions
+
+##### `set_pixels(pixels)`
+Replace the source grid with compact symbolic rows.
+
+##### `set_pixel(x, y, symbol)`
+Replace one source cell using a palette symbol, `.` or `X`.
 
 ##### `to_ascii(rendered=False)`
 Format the sprite as a symbolic grid. By default it formats the source grid;
