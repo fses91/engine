@@ -119,6 +119,9 @@ game-authoring model is symbolic:
 - `sprite.render()` returns immutable transformed rows, still as symbols.
 - `sprite.set_pixel(x, y, symbol)` and `sprite.set_pixels(rows)` provide
   symbol-only source-grid mutation.
+- `sprite.crop(right=1)` and `sprite.pad(left=1, fill="R")` express structural
+  shrinkage and growth while preserving retained cells in world space.
+- `sprite.contains_point(x, y)` performs a transform-aware hit test.
 - `sprite.to_ascii()` returns the sprite's source grid using color symbols and
   preserves `.`/`X`; `sprite.to_ascii(rendered=True)` includes its current
   transforms.
@@ -318,6 +321,11 @@ Enum of available actions with attached data model types.
 - `RESET` (id 0) uses `SimpleAction`.
 - `ACTION1`-`ACTION5` and `ACTION7` use `SimpleAction`.
 - `ACTION6` uses `ComplexAction` to encode screen coordinates `x` and `y` (0,0 is the top left pixel). Used for click inputs
+
+`ActionInput.x`, `ActionInput.y`, and `ActionInput.position` expose optional
+ACTION6 display coordinates. Use `action.require_position()` when coordinates
+are required; it returns `(x, y)` or raises a clear error for missing or invalid
+data.
 
 Common client/UI conventions:
 - `ACTION1`: Up or W or 1
@@ -544,6 +552,26 @@ Replace the source grid with compact symbolic rows.
 
 ##### `set_pixel(x, y, symbol)`
 Replace one source cell using a palette symbol, `.` or `X`.
+
+##### `crop(left=0, right=0, top=0, bottom=0)`
+Shrink an untransformed sprite by removing source-grid edges. Cropping from the
+left or top adjusts the sprite position so retained cells stay at their previous
+world coordinates. The operation rejects negative amounts, an empty result, or
+active rotation, mirroring, or scaling.
+
+```python
+bar.crop(right=1)
+```
+
+##### `pad(left=0, right=0, top=0, bottom=0, fill=".")`
+Grow an untransformed sprite around its edges. Padding from the left or top
+adjusts the sprite position so existing cells stay at their previous world
+coordinates. `fill` accepts a palette symbol, `.` or `X`.
+
+##### `contains_point(x, y, pixel_perfect=True)`
+Test whether a world coordinate lies on the rendered sprite, including its
+rotation, mirroring, and scaling. Pixel-perfect tests treat `.` as a hole and
+count visible colors and invisible-solid `X` cells.
 
 ##### `to_ascii(rendered=False)`
 Format the sprite as a symbolic grid. By default it formats the source grid;
@@ -893,6 +921,15 @@ Get the top-most sprite at the given coordinates.
 - `ignore_collidable`: If True, includes non-collidable sprites
 - Returns: The first matching sprite or `None`
 
+##### `get_sprites_at(x, y, tag=None, ignore_collidable=False, top_first=True)`
+Get every matching sprite at the given coordinates in layer order.
+
+- `x`, `y`: World coordinates to search
+- `tag`: Optional tag filter
+- `ignore_collidable`: If True, includes non-collidable sprites
+- `top_first`: If True, higher layers are returned first
+- Returns: A list of matching sprites
+
 ##### `collides_with(sprite, ignoreMode=False)`
 Return all sprites in the level that collide with the given sprite.
 
@@ -958,7 +995,7 @@ If you use this project in your research, please cite it as:
   title        = {ARC Game Engine},
   year         = {2026},
   url          = {https://github.com/arcprize/ARCEngine},
-  version      = {0.9.3}
+  version      = {0.9.4}
 }
 ```
 

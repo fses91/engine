@@ -33,3 +33,6 @@ Both `sprite.pixels` and `sprite.render()` return immutable tuples of compact
 row strings. Numeric palette indices appear only in generated camera/protocol
 frames, such as `game.perform_action(...).frame`.
 Use `set_pixel()` or `set_pixels()` when game logic needs to mutate the grid.
+Use `crop()`/`pad()` for structural edge changes and `contains_point()` for a
+transform-aware world-coordinate hit test. `Level.get_sprites_at()` returns all
+matching sprites in layer order.

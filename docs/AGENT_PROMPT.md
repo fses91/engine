@@ -63,6 +63,13 @@ Symbolic inspection:
 - `sprite.render()` → immutable transformed rows using the same symbols.
 - `sprite.set_pixel(x, y, "R")` and `sprite.set_pixels(["R.", ".R"])` mutate
   source cells without introducing color numbers.
+- `sprite.crop(right=1)` shrinks an untransformed sprite from an edge;
+  `sprite.pad(left=1, fill="R")` grows it while preserving existing cells at
+  their world coordinates.
+- `sprite.contains_point(x, y)` performs a transform-aware, pixel-perfect
+  world-coordinate hit test.
+- `level.get_sprites_at(x, y)` returns matching sprites from highest to lowest
+  layer; `level.get_sprite_at(x, y)` returns only the top match.
 - `sprite.to_ascii()` → source grid as text, preserving `.` and `X`;
   `sprite.to_ascii(rendered=True)` includes transforms.
 - `format_grid_ascii(frame)` → a rendered frame as symbolic text.
@@ -109,9 +116,11 @@ Collision:
 - `ACTION1=up`, `ACTION2=down`, `ACTION3=left`, `ACTION4=right` by common
   convention.
 - `ACTION5` is the primary/space action.
-- `ACTION6` is a click/place action with display coordinates
-  `action.data["x"]`, `action.data["y"]` in `0..63`; use
-  `camera.display_to_grid(x, y)` for world coordinates.
+- `ACTION6` is a click/place action with display coordinates in `0..63`. Use
+  `x, y = action.require_position()` and then
+  `camera.display_to_grid(x, y)` for world coordinates. Optional accessors
+  `action.x`, `action.y`, and `action.position` return `None` for actions with
+  no position; the raw mapping remains available as `action.data`.
 - `ACTION7` is commonly undo.
 - Declare enabled IDs with `available_actions`; the default is 1..6.
 

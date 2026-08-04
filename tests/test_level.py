@@ -192,6 +192,12 @@ class TestLevel(unittest.TestCase):
         self.assertEqual(level.get_sprite_at(22, 22), sprite6)
 
         self.assertEqual(level.get_sprite_at(25, 25), sprite8)
+        self.assertEqual(level.get_sprites_at(25, 25), [sprite8, sprite7])
+        self.assertEqual(level.get_sprites_at(25, 25, top_first=False), [sprite7, sprite8])
+
+        sprite7.set_layer(3)
+        self.assertEqual(level.get_sprites_at(25, 25), [sprite7, sprite8])
+        self.assertEqual(level.get_sprite_at(25, 25), sprite7)
 
     def test_sprite_at_with_scaling_and_rotation(self):
         """Test getting sprite at a given location with scaling and rotation"""
@@ -242,6 +248,8 @@ class TestLevel(unittest.TestCase):
         self.assertEqual(level.get_sprite_at(1, 0, ignore_collidable=True), sprite1)
         self.assertEqual(level.get_sprite_at(0, 1, ignore_collidable=True), sprite1)
         self.assertEqual(level.get_sprite_at(1, 1, ignore_collidable=True), sprite1)
+        self.assertEqual(level.get_sprites_at(0, 0), [])
+        self.assertEqual(level.get_sprites_at(0, 0, ignore_collidable=True), [sprite1])
 
     def test_level_name_on_clone(self):
         """Test the name of a level is cloned correctly."""

@@ -13,12 +13,10 @@ class Level:
     """A level that manages a collection of sprites."""
 
     _sprites: List[Sprite]
-    _sorted_sprites: List[Sprite] | None  # Sorted High to low
     _grid_size: Tuple[int, int] | None
     _data: dict[str, Any]
     _name: str
     _placeable_areas: List[PlaceableArea]
-    _need_sort: bool
 
     def __init__(
         self,
@@ -42,8 +40,6 @@ class Level:
         self._data = data
         self._name = name
         self._placeable_areas = placeable_areas if placeable_areas is not None else []
-        self._need_sort = True
-
         if sprites:
             # Add first (fast path), then do one-time merge+sort.
             self._sprites.extend(sprites)
@@ -107,7 +103,6 @@ class Level:
             sprite: The sprite to add
         """
         self._sprites.append(sprite)
-        self._need_sort = True
 
     def remove_sprite(self, sprite: Sprite) -> None:
         """Remove a sprite from the level.
@@ -197,18 +192,42 @@ class Level:
             y: The y coordinate
             tag: The tag to search for
         """
-        if self._need_sort or self._sorted_sprites is None or len(self._sorted_sprites) != len(self._sprites):
-            self._sorted_sprites = sorted(self._sprites, key=lambda sprite: sprite.layer, reverse=True)
-            self._need_sort = False
-        for sprite in self._sorted_sprites:
-            if (ignore_collidable or sprite.is_collidable) and x >= sprite.x and y >= sprite.y and x < sprite.x + sprite.width and y < sprite.y + sprite.height:
-                if sprite.blocking == BlockingMode.PIXEL_PERFECT:
-                    pixels = sprite._render_pixels()
-                    if pixels[y - sprite.y][x - sprite.x] == -1:
-                        continue
-                if tag is None or tag in sprite.tags:
-                    return sprite
-        return None
+        sprites = self.get_sprites_at(x, y, tag=tag, ignore_collidable=ignore_collidable)
+        return sprites[0] if sprites else None
+
+    def get_sprites_at(
+        self,
+        x: int,
+        y: int,
+        tag: Optional[str] = None,
+        ignore_collidable: bool = False,
+        *,
+        top_first: bool = True,
+    ) -> List[Sprite]:
+        """Return every sprite containing a world coordinate in layer order.
+
+        Pixel-perfect sprites treat ``.`` as a hole. Other blocking modes use
+        their rendered bounding boxes, matching :meth:`get_sprite_at`.
+        Sorting happens at query time so runtime ``set_layer`` changes are
+        reflected immediately.
+
+        Args:
+            x: World x-coordinate.
+            y: World y-coordinate.
+            tag: Optional required sprite tag.
+            ignore_collidable: Include non-collidable sprites when true.
+            top_first: Return higher layers first when true, lower layers first
+                otherwise.
+        """
+
+        ordered = sorted(self._sprites, key=lambda sprite: sprite.layer, reverse=top_first)
+        return [
+            sprite
+            for sprite in ordered
+            if (ignore_collidable or sprite.is_collidable)
+            and (tag is None or tag in sprite.tags)
+            and sprite.contains_point(x, y, pixel_perfect=sprite.blocking == BlockingMode.PIXEL_PERFECT)
+        ]
 
     def collides_with(self, sprite: Sprite, ignoreMode: bool = False) -> List[Sprite]:
         """Checks all sprites in the level for collisions with the given sprite.

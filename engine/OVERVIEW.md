@@ -48,6 +48,12 @@ view, and `format_grid_ascii()` to convert a generated numeric frame into
 symbolic text. Palette indices stay inside the render pipeline until frame
 generation.
 
+Dynamic shape changes remain symbolic. `Sprite.set_pixel()` and
+`Sprite.set_pixels()` edit cells directly; `Sprite.crop()` and `Sprite.pad()`
+express edge shrinkage and growth while preserving retained cells at their
+world coordinates. `Sprite.contains_point()` performs a transform-aware hit
+test, and `Level.get_sprites_at()` returns every matching sprite in layer order.
+
 ## Sprites and collision
 
 A sprite owns a symbolic grid plus a world position, layer, transform, blocking
@@ -128,6 +134,10 @@ UI implementations receive the final 64×64 engine frame. They can use
 - `RESET` (`0`) resets the game or level.
 - `ACTION1`–`ACTION5` and `ACTION7` contain no coordinates.
 - `ACTION6` contains display coordinates `x` and `y` in `0..63`.
+
+`ActionInput.x`, `.y`, and `.position` expose optional ACTION6 display
+coordinates. `ActionInput.require_position()` returns a validated pair or
+raises a clear error for positionless or malformed inputs.
 
 Common controls map ACTION1–4 to up, down, left, and right; ACTION5 to a primary
 button; ACTION6 to click/place; and ACTION7 to undo. A game declares the action

@@ -513,6 +513,97 @@ class Sprite:
         self._pixels[y_int, x_int] = _color_to_index(symbol, allow_special=True)
         return self
 
+    def _require_untransformed_geometry(self, operation: str) -> None:
+        """Reject ambiguous source-grid geometry edits on transformed sprites."""
+
+        if self.rotation != 0 or self._scale != 1 or self._mirror_ud or self._mirror_lr:
+            raise ValueError(
+                f"Sprite.{operation}() requires rotation=0, scale=1, mirror_ud=False, and mirror_lr=False; "
+                "use set_pixels() when editing transformed source geometry explicitly"
+            )
+
+    @staticmethod
+    def _edge_amounts(*, left: int, right: int, top: int, bottom: int) -> tuple[int, int, int, int]:
+        """Validate structural edit amounts in left/right/top/bottom order."""
+
+        amounts = {"left": left, "right": right, "top": top, "bottom": bottom}
+        for name, amount in amounts.items():
+            if isinstance(amount, bool) or not isinstance(amount, int):
+                raise TypeError(f"{name} must be an integer, got {amount!r}")
+            if amount < 0:
+                raise ValueError(f"{name} must not be negative, got {amount}")
+        return left, right, top, bottom
+
+    def crop(self, *, left: int = 0, right: int = 0, top: int = 0, bottom: int = 0) -> "Sprite":
+        """Remove source-grid rows or columns while preserving world alignment.
+
+        Cropping from the left or top advances ``x`` or ``y`` so the retained
+        cells remain at their previous world coordinates. Cropping from the
+        right or bottom leaves the sprite position unchanged.
+
+        Structural edits operate on an untransformed source grid. This keeps
+        edge names unambiguous and makes collision bounds follow the new shape.
+
+        Raises:
+            TypeError: If an edge amount is not an integer.
+            ValueError: If an amount is negative, the crop would remove the
+                complete grid, or the sprite has active transforms.
+        """
+
+        left, right, top, bottom = self._edge_amounts(left=left, right=right, top=top, bottom=bottom)
+        if left == right == top == bottom == 0:
+            return self
+        self._require_untransformed_geometry("crop")
+
+        height, width = self._pixels.shape
+        new_width = width - left - right
+        new_height = height - top - bottom
+        if new_width <= 0 or new_height <= 0:
+            raise ValueError(
+                f"Crop ({left=}, {right=}, {top=}, {bottom=}) would remove the complete {width}x{height} sprite grid"
+            )
+
+        self._pixels = self._pixels[top : top + new_height, left : left + new_width].copy()
+        self._x += left
+        self._y += top
+        return self
+
+    def pad(
+        self,
+        *,
+        left: int = 0,
+        right: int = 0,
+        top: int = 0,
+        bottom: int = 0,
+        fill: ColorSymbol = ".",
+    ) -> "Sprite":
+        """Grow the source grid around its edges while preserving alignment.
+
+        Padding on the left or top decreases ``x`` or ``y`` so the existing
+        cells remain at their previous world coordinates. ``fill`` accepts any
+        palette symbol, ``.`` for passable transparency, or ``X`` for an
+        invisible solid cell.
+
+        Raises:
+            TypeError: If an edge amount is not an integer.
+            ValueError: If an amount is negative, ``fill`` is invalid, or the
+                sprite has active transforms.
+        """
+
+        left, right, top, bottom = self._edge_amounts(left=left, right=right, top=top, bottom=bottom)
+        if left == right == top == bottom == 0:
+            return self
+        self._require_untransformed_geometry("pad")
+
+        fill_index = _color_to_index(fill, allow_special=True)
+        height, width = self._pixels.shape
+        replacement = np.full((height + top + bottom, width + left + right), fill_index, dtype=np.int8)
+        replacement[top : top + height, left : left + width] = self._pixels
+        self._pixels = replacement
+        self._x -= left
+        self._y -= top
+        return self
+
     @property
     def symbols(self) -> tuple[str, ...]:
         """Alias for :attr:`pixels`, retained for readability."""
@@ -537,6 +628,26 @@ class Sprite:
             tuple[str, ...]: Immutable transformed sprite rows.
         """
         return _symbols_from_pixels(self._render_pixels())
+
+    def contains_point(self, x: int, y: int, *, pixel_perfect: bool = True) -> bool:
+        """Return whether a world coordinate lies on this sprite.
+
+        The test accounts for rotation, mirrors, and scaling. With
+        ``pixel_perfect=True``, passable ``.`` cells are holes while visible
+        colors and invisible-solid ``X`` cells count as part of the sprite.
+        Interaction mode is intentionally ignored; callers decide whether
+        hidden or non-collidable sprites are eligible.
+        """
+
+        x_int = int(x)
+        y_int = int(y)
+        pixels = self._render_pixels()
+        local_x = x_int - self._x
+        local_y = y_int - self._y
+        height, width = pixels.shape
+        if local_x < 0 or local_y < 0 or local_x >= width or local_y >= height:
+            return False
+        return not pixel_perfect or bool(pixels[local_y, local_x] != -1)
 
     def _render_pixels(self) -> NDArray[np.int8]:
         """Render to the numeric grid used only inside the engine pipeline."""

@@ -575,6 +575,48 @@ class TestSprite(unittest.TestCase):
         sprite.color_remap(None, "c")
         self.assertEqual(sprite.pixels, ("ccc.",))
 
+    def test_crop_preserves_retained_world_coordinates(self):
+        sprite = Sprite(["WwgG", "cBMP", "RbSY"], x=10, y=20)
+
+        result = sprite.crop(left=1, right=1, top=1)
+
+        self.assertIs(result, sprite)
+        self.assertEqual(sprite.symbols, ("BM", "bS"))
+        self.assertEqual((sprite.x, sprite.y), (11, 21))
+        self.assertEqual((sprite.width, sprite.height), (2, 2))
+
+    def test_pad_preserves_existing_world_coordinates(self):
+        sprite = Sprite(["PP"], x=5, y=6)
+
+        result = sprite.pad(left=1, right=1, top=1, bottom=1)
+
+        self.assertIs(result, sprite)
+        self.assertEqual(sprite.symbols, ("....", ".PP.", "...."))
+        self.assertEqual((sprite.x, sprite.y), (4, 5))
+        self.assertEqual((sprite.width, sprite.height), (4, 3))
+
+    def test_crop_and_pad_validate_geometry(self):
+        with self.assertRaisesRegex(ValueError, "remove the complete"):
+            Sprite(["PP"]).crop(right=2)
+        with self.assertRaisesRegex(ValueError, "must not be negative"):
+            Sprite(["PP"]).pad(left=-1)
+        with self.assertRaisesRegex(TypeError, "must be an integer"):
+            Sprite(["PP"]).crop(right=1.5)  # type: ignore[arg-type]
+        with self.assertRaisesRegex(ValueError, "requires rotation=0"):
+            Sprite(["PP"], rotation=180).crop(right=1)
+        with self.assertRaisesRegex(ValueError, "requires rotation=0"):
+            Sprite(["PP"], scale=2).pad(right=1, fill="P")
+
+    def test_contains_point_uses_rendered_geometry(self):
+        sprite = Sprite([".W", "WX"], x=10, y=20, rotation=90)
+
+        self.assertEqual(sprite.render(), ("W.", "XW"))
+        self.assertTrue(sprite.contains_point(10, 20))
+        self.assertFalse(sprite.contains_point(11, 20))
+        self.assertTrue(sprite.contains_point(10, 21))
+        self.assertTrue(sprite.contains_point(11, 20, pixel_perfect=False))
+        self.assertFalse(sprite.contains_point(12, 20, pixel_perfect=False))
+
     def test_merge_basic(self):
         """Test basic sprite merging with overlapping pixels."""
         # Create two sprites with some overlap

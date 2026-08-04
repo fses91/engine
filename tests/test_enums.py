@@ -49,3 +49,30 @@ class TestActionInputReasoning(unittest.TestCase):
         expected_bytes = json.dumps(blob, separators=(",", ":")).encode("utf-8")
         self.assertLessEqual(len(expected_bytes), MAX_REASONING_BYTES)
         self.assertEqual(payload.reasoning, blob)
+
+
+class TestActionInputPosition(unittest.TestCase):
+    def test_exposes_action6_coordinates(self):
+        action = ActionInput(id=GameAction.ACTION6, data={"x": 39, "y": 29})
+
+        self.assertEqual(action.x, 39)
+        self.assertEqual(action.y, 29)
+        self.assertEqual(action.position, (39, 29))
+        self.assertEqual(action.require_position(), (39, 29))
+
+    def test_positionless_action_returns_none(self):
+        action = ActionInput(id=GameAction.ACTION1)
+
+        self.assertIsNone(action.x)
+        self.assertIsNone(action.y)
+        self.assertIsNone(action.position)
+        with self.assertRaisesRegex(ValueError, "has no position"):
+            action.require_position()
+
+    def test_rejects_incomplete_or_invalid_coordinates_on_access(self):
+        with self.assertRaisesRegex(ValueError, "missing 'y'"):
+            _ = ActionInput(id=GameAction.ACTION6, data={"x": 1}).position
+        with self.assertRaisesRegex(ValueError, "must be an integer"):
+            _ = ActionInput(id=GameAction.ACTION6, data={"x": True, "y": 1}).position
+        with self.assertRaisesRegex(ValueError, "between 0 and 63"):
+            _ = ActionInput(id=GameAction.ACTION6, data={"x": 64, "y": 1}).position

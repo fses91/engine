@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "engine"
-version = "0.9.3"
+version = "0.9.4"
 description = "A compact, symbol-first game engine for ARC-AGI-3"
 readme = "README.md"
 requires-python = ">=3.12"

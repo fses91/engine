@@ -110,8 +110,58 @@ class GameAction(Enum):
 
 class ActionInput(BaseModel):
     id: GameAction = GameAction.RESET
-    data: dict[str, Any] = {}
+    data: dict[str, Any] = Field(default_factory=dict)
     reasoning: Optional[Any] = Field(default=None, description="Opaque client-supplied blob; stored & echoed back verbatim.")
+
+    def _coordinate(self, name: str) -> int | None:
+        """Return one validated display coordinate from ``data`` when present."""
+
+        value = self.data.get(name)
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"ActionInput {name!r} coordinate must be an integer, got {value!r}")
+        if not 0 <= value <= 63:
+            raise ValueError(f"ActionInput {name!r} coordinate must be between 0 and 63, got {value}")
+        return int(value)
+
+    @property
+    def x(self) -> int | None:
+        """ACTION6 display x-coordinate, or ``None`` when no position exists."""
+
+        return self._coordinate("x")
+
+    @property
+    def y(self) -> int | None:
+        """ACTION6 display y-coordinate, or ``None`` when no position exists."""
+
+        return self._coordinate("y")
+
+    @property
+    def position(self) -> tuple[int, int] | None:
+        """ACTION6 display ``(x, y)``, or ``None`` for positionless actions.
+
+        Raises:
+            ValueError: If only one coordinate is present or either coordinate
+                is not an integer in the display range ``0..63``.
+        """
+
+        x = self.x
+        y = self.y
+        if x is None and y is None:
+            return None
+        if x is None or y is None:
+            missing = "x" if x is None else "y"
+            raise ValueError(f"ActionInput position is incomplete: missing {missing!r} coordinate")
+        return x, y
+
+    def require_position(self) -> tuple[int, int]:
+        """Return ACTION6 display coordinates or raise a clear error."""
+
+        position = self.position
+        if position is None:
+            raise ValueError("ActionInput has no position; expected data containing integer 'x' and 'y' coordinates")
+        return position
 
     # Optional size / serialisability guard
     @field_validator("reasoning")
