@@ -132,6 +132,71 @@ class Level:
         """
         return [s for s in self._sprites if s.name == name]
 
+    def require_sprite(self, name: str) -> Sprite:
+        """Return the single sprite with the given name.
+
+        This method is intended for game logic that requires an unambiguous
+        entity reference. Use :meth:`get_sprites_by_name` when duplicate names
+        are expected.
+
+        Args:
+            name: The exact sprite name to find.
+
+        Returns:
+            The uniquely named sprite.
+
+        Raises:
+            ValueError: If no sprite or multiple sprites have the given name.
+        """
+        sprites = self.get_sprites_by_name(name)
+        if len(sprites) != 1:
+            raise ValueError(f"Expected exactly one sprite named {name!r}, found {len(sprites)}")
+        return sprites[0]
+
+    def replace_sprite(
+        self,
+        old: Sprite,
+        replacement: Sprite,
+        *,
+        preserve_position: bool = True,
+        preserve_layer: bool = True,
+    ) -> Sprite:
+        """Atomically replace one sprite in the level.
+
+        The replacement occupies the same list position so equal-layer render
+        order remains stable. By default, its world position and layer are
+        copied from the old sprite; its visual data and other properties remain
+        those of the replacement.
+
+        Args:
+            old: Sprite currently owned by this level.
+            replacement: Sprite to insert. It must not already belong to this
+                level at another position.
+            preserve_position: Copy the old sprite's world position.
+            preserve_layer: Copy the old sprite's rendering layer.
+
+        Returns:
+            The inserted replacement sprite.
+
+        Raises:
+            ValueError: If ``old`` is not in the level or ``replacement`` is
+                already in the level at another position.
+        """
+        old_index = next((index for index, sprite in enumerate(self._sprites) if sprite is old), None)
+        if old_index is None:
+            raise ValueError(f"Cannot replace sprite {old.name!r}: it does not belong to this level")
+        if replacement is old:
+            return old
+        if any(sprite is replacement for sprite in self._sprites):
+            raise ValueError(f"Cannot use sprite {replacement.name!r} as a replacement: it already belongs to this level")
+
+        if preserve_position:
+            replacement.set_position(old.x, old.y)
+        if preserve_layer:
+            replacement.set_layer(old.layer)
+        self._sprites[old_index] = replacement
+        return replacement
+
     def get_sprites_by_tag(self, tag: str) -> List[Sprite]:
         """Get all sprites that have the given tag.
 

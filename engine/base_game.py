@@ -268,6 +268,51 @@ class ARCBaseGame(ABC):
         return self._action
 
     @final
+    def action_grid_position(self) -> tuple[int, int] | None:
+        """Return the current ``ACTION6`` position in world-grid coordinates.
+
+        Display coordinates supplied by an action account for camera scaling and
+        letterboxing. This helper validates that the current action is positional
+        and applies the camera transform before game logic uses the coordinates.
+
+        Returns:
+            The world-grid position, or ``None`` when the display position falls
+            inside the camera's letterbox.
+
+        Raises:
+            ValueError: If the current action is not ``ACTION6`` or does not
+                contain a valid display position.
+        """
+        if self.action.id != GameAction.ACTION6:
+            raise ValueError(f"Current action must be ACTION6 to have a grid position, got {self.action.id.name}")
+        display_x, display_y = self.action.require_position()
+        return self.camera.display_to_grid(display_x, display_y)
+
+    @final
+    def clicked_sprite(self, tag: str | None = None, ignore_collidable: bool = False) -> Sprite | None:
+        """Return the topmost sprite targeted by the current ``ACTION6``.
+
+        The action's display position is converted to world-grid coordinates
+        before hit testing. A click in the camera letterbox does not target a
+        sprite.
+
+        Args:
+            tag: Optional tag that the targeted sprite must contain.
+            ignore_collidable: Include non-collidable sprites when true.
+
+        Returns:
+            The topmost matching sprite, or ``None`` when no sprite is targeted.
+
+        Raises:
+            ValueError: If the current action is not ``ACTION6`` or does not
+                contain a valid display position.
+        """
+        position = self.action_grid_position()
+        if position is None:
+            return None
+        return self.current_level.get_sprite_at(*position, tag=tag, ignore_collidable=ignore_collidable)
+
+    @final
     def _set_action(self, action_input: ActionInput) -> None:
         """Set the action to perform.
 
